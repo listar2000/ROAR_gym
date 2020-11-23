@@ -19,16 +19,21 @@ def main():
         "carla_config": carla_config
     }
     env = gym.make('roar-v0', params=params)
-    # obs = env.reset()
-    #
+    obs = env.reset()
+    counter = 1
     while True:
         action = [1.0, 0.0]
         obs, reward, is_done, info = env.step(action)
         env.render()
-    #
-    #     if is_done:
-    #         print("IS DONE")
-    #         obs = env.reset()
+
+        if counter % 200 == 0:
+            # test reset ability
+            env.reset()
+            counter = 1
+        if is_done:
+            print("IS DONE")
+            obs = env.reset()
+        counter += 1
 
 
 if __name__ == '__main__':

@@ -11,6 +11,7 @@ from ROAR.agent_module.pure_pursuit_agent import PurePursuitAgent
 from ROAR.agent_module.pid_agent import PIDAgent
 from pprint import pprint
 
+
 class ROAREnv(gym.Env):
     def __init__(self, params: Dict[str, Any]):
         """
@@ -35,16 +36,9 @@ class ROAREnv(gym.Env):
         self.carla_runner = CarlaRunner(carla_settings=self.carla_config,
                                         agent_settings=self.agent_config,
                                         npc_agent_class=self.npc_agent_class)
-        try:
-
-            self.num_frames_per_step = num_frames_per_step
-            vehicle = self.carla_runner.set_carla_world()
-            self.agent = PIDAgent(vehicle=vehicle, agent_settings=self.agent_config)
-            self.clock: Optional[pygame.time.Clock] = None
-            self._start_game()
-        except Exception as e:
-            self.logger.error(e)
-            self.carla_runner.on_finish()
+        self.num_frames_per_step = num_frames_per_step
+        self.agent: Optional[Agent] = None
+        self.clock: Optional[pygame.time.Clock] = None
 
     def step(self, action: VehicleControl) -> Tuple[Agent, float, bool, dict]:
         self.clock.tick_busy_loop(60)
@@ -71,7 +65,7 @@ class ROAREnv(gym.Env):
         self.carla_runner.world.player.apply_control(carla_control)
         return self._get_obs(), self._get_reward(), self._terminal(), self._get_info()
 
-    def reset(self):
+    def reset(self) -> Agent:
         self.carla_runner.on_finish()
         self.carla_runner = CarlaRunner(agent_settings=self.agent_config,
                                         carla_settings=self.carla_config,
@@ -80,6 +74,7 @@ class ROAREnv(gym.Env):
         self.agent = PIDAgent(vehicle=vehicle, agent_settings=self.agent_config)
         self.clock: Optional[pygame.time.Clock] = None
         self._start_game()
+        return self.agent
 
     def render(self, mode='ego'):
         self.carla_runner.world.render(display=self.carla_runner.display)
