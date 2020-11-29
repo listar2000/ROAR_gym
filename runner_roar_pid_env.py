@@ -1,7 +1,11 @@
+import warnings
+import logging
+logging.getLogger("tensorflow").setLevel(logging.ERROR)
+logging.getLogger("numpy").setLevel(logging.ERROR)
+warnings.filterwarnings('ignore')
 import os
 import sys
 from pathlib import Path
-
 sys.path.append(Path(os.getcwd()).parent.as_posix())
 import gym
 import ROAR_Gym
@@ -11,7 +15,8 @@ from ROAR.agent_module.agent import Agent
 from ROAR.agent_module.rl_pid_agent import RLPIDAgent
 from stable_baselines.ddpg.policies import LnMlpPolicy
 from stable_baselines import DDPG
-import logging
+
+
 
 def main():
     # Set gym-carla environment
@@ -26,15 +31,12 @@ def main():
     env = gym.make('roar-pid-v0', params=params)
     env.reset()
     # TODO, i don't think this tensorboard thing is working lol
-    model = DDPG(LnMlpPolicy, env=env, verbose=2, tensorboard_log="./output/tensorboard/pid/", render=True)
+    model = DDPG(LnMlpPolicy, env=env, verbose=1, render=True,
+                 tensorboard_log="./output/tensorboard/pid/",
+                 full_tensorboard_log=True)  # full tensorboard log can take up space quickly
 
     model.learn(total_timesteps=int(2e5))
 
 
 if __name__ == '__main__':
-    logging.getLogger("tensorflow").setLevel(logging.ERROR)
-    from warnings import simplefilter
-
-    # ignore all future warnings
-    simplefilter(action='ignore', category=FutureWarning)
     main()

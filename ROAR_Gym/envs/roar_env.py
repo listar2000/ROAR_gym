@@ -103,10 +103,12 @@ class ROAREnv(gym.Env, ABC):
         return -1
 
     def _terminal(self) -> bool:
+        if self.carla_runner.agent_collision_counter > 10:
+            return True
         return self.agent.is_done  # TODO temporary, needs to be changed
 
     def _get_info(self) -> dict:
-        pass
+        return dict()
 
     def _get_obs(self) -> Any:
         return self.agent

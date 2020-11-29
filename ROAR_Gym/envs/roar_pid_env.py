@@ -64,8 +64,7 @@ class ROARPIDEnv(ROAREnv):
         return np.append(np.append(curr_speed, curr_transform), next_waypoint_transform)
 
     def get_reward(self) -> float:
-        print("get_reward BEING CALLED")
-        return -1
+        return 1
 
     def reset(self) -> Any:
         super(ROARPIDEnv, self).reset()
