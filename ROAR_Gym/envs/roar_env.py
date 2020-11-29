@@ -4,15 +4,13 @@ import logging
 import pygame
 from ROAR.configurations.configuration import Configuration as AgentConfig
 from ROAR_Sim.carla_client.carla_runner import CarlaRunner
-from ROAR.utilities_module.vehicle_models import VehicleControl
 from typing import Optional, Tuple, Any, Dict
-from ROAR.agent_module.agent import Agent
 from ROAR.agent_module.pure_pursuit_agent import PurePursuitAgent
 from ROAR.agent_module.agent import Agent
-from pprint import pprint
+from abc import ABC
 
 
-class ROAREnv(gym.Env):
+class ROAREnv(gym.Env, ABC):
     def __init__(self, params: Dict[str, Any]):
         """
         carla_config: CarlaConfig,
@@ -41,12 +39,15 @@ class ROAREnv(gym.Env):
         self.agent: Optional[Agent] = None
         self.clock: Optional[pygame.time.Clock] = None
 
-    def step(self, action: VehicleControl) -> Tuple[Agent, float, bool, dict]:
+        self.action_space = None  # overwrite in higher classes
+        self.observation_space = None  # overwrite in higher classes
+
+    def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         """
         This provides an example implementation of step, intended to be overwritten
 
         Args:
-            action: action for ego vehicle
+            action: Any
 
         Returns:
             Tuple of Observation, reward, is done, other information
@@ -68,7 +69,7 @@ class ROAREnv(gym.Env):
         self.carla_runner.world.player.apply_control(carla_control)
         return self._get_obs(), self.get_reward(), self._terminal(), self._get_info()
 
-    def reset(self) -> Agent:
+    def reset(self) -> Any:
         self.carla_runner.on_finish()
         self.carla_runner = CarlaRunner(agent_settings=self.agent_config,
                                         carla_settings=self.carla_config,
@@ -107,5 +108,5 @@ class ROAREnv(gym.Env):
     def _get_info(self) -> dict:
         pass
 
-    def _get_obs(self) -> Agent:
+    def _get_obs(self) -> Any:
         return self.agent
