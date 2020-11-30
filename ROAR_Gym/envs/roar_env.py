@@ -8,7 +8,9 @@ from typing import Optional, Tuple, Any, Dict
 from ROAR.agent_module.pure_pursuit_agent import PurePursuitAgent
 from ROAR.agent_module.agent import Agent
 from abc import ABC
-
+from stable_baselines.common.callbacks import BaseCallback
+from stable_baselines.common.base_class import BaseRLModel
+from pprint import pformat
 
 class ROAREnv(gym.Env, ABC):
     def __init__(self, params: Dict[str, Any]):
@@ -24,9 +26,10 @@ class ROAREnv(gym.Env, ABC):
         agent_config: AgentConfig = params["agent_config"]
         ego_agent_class = params.get("ego_agent_class", Agent)
         npc_agent_class = params.get("npc_agent_class", PurePursuitAgent)
+
         num_frames_per_step: int = params.get("num_frames_per_step", 1)
         # use_manual_control: bool = params.get("use_manual_control", False)
-
+        self.max_collision_allowed: int = params.get("max_collision", 5)
         self.logger = logging.getLogger("ROAR Gym")
         self.agent_config = agent_config
         self.EgoAgentClass = ego_agent_class
@@ -103,7 +106,7 @@ class ROAREnv(gym.Env, ABC):
         return -1
 
     def _terminal(self) -> bool:
-        if self.carla_runner.agent_collision_counter > 10:
+        if self.carla_runner.get_num_collision() > self.max_collision_allowed:
             return True
         return self.agent.is_done  # TODO temporary, needs to be changed
 
@@ -112,3 +115,17 @@ class ROAREnv(gym.Env, ABC):
 
     def _get_obs(self) -> Any:
         return self.agent
+
+
+class LoggingCallback(BaseCallback):
+    def __init__(self, model: BaseRLModel, verbose=0):
+        super().__init__(verbose)
+        self.init_callback(model=model)
+
+    def _on_step(self) -> bool:
+        curr_step = self.locals.get("step")
+        info = self.locals.get("info")
+
+        msg = f"Step = {curr_step} \n{pformat(info)}"
+        self.logger.log(msg)
+        return True
