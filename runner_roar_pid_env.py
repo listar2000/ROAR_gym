@@ -35,7 +35,8 @@ def main():
     params = {
         "agent_config": agent_config,
         "carla_config": carla_config,
-        "ego_agent_class": RLPIDAgent
+        "ego_agent_class": RLPIDAgent,
+        "max_collision": 5
     }
 
     env = gym.make('roar-pid-v0', params=params)
@@ -73,6 +74,8 @@ def find_latest_model(root_path: Path) -> Optional[Path]:
     paths_dict: Dict[int, Path] = {
         int(path.name.split("_")[2]): path for path in paths
     }
+    if len(paths_dict) == 0:
+        return None
     latest_model_file_path: Optional[Path] = paths_dict.get(max(paths_dict.keys()), None)
     return latest_model_file_path
 

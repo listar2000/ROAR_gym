@@ -11,6 +11,7 @@ from abc import ABC
 from stable_baselines.common.callbacks import BaseCallback
 from stable_baselines.common.base_class import BaseRLModel
 from pprint import pformat
+from abc import abstractmethod
 
 class ROAREnv(gym.Env, ABC):
     def __init__(self, params: Dict[str, Any]):
@@ -45,6 +46,7 @@ class ROAREnv(gym.Env, ABC):
         self.action_space = None  # overwrite in higher classes
         self.observation_space = None  # overwrite in higher classes
 
+    @abstractmethod
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         """
         This provides an example implementation of step, intended to be overwritten
@@ -81,7 +83,7 @@ class ROAREnv(gym.Env, ABC):
         self.agent = self.EgoAgentClass(vehicle=vehicle, agent_settings=self.agent_config)
         self.clock: Optional[pygame.time.Clock] = None
         self._start_game()
-        return self.agent
+        return self._get_obs()
 
     def render(self, mode='ego'):
         self.carla_runner.world.render(display=self.carla_runner.display)
@@ -97,24 +99,27 @@ class ROAREnv(gym.Env, ABC):
         except Exception as e:
             self.logger.error(e)
 
+    @abstractmethod
     def get_reward(self) -> float:
         """
         Intended to be overwritten
         Returns:
 
         """
-        return -1
+        raise NotImplementedError
 
     def _terminal(self) -> bool:
         if self.carla_runner.get_num_collision() > self.max_collision_allowed:
             return True
         return self.agent.is_done  # TODO temporary, needs to be changed
 
+    @abstractmethod
     def _get_info(self) -> dict:
         return dict()
 
+    @abstractmethod
     def _get_obs(self) -> Any:
-        return self.agent
+        raise NotImplementedError
 
 
 class LoggingCallback(BaseCallback):
