@@ -9,3 +9,7 @@ register(
     id='roar-pid-v0',
     entry_point='ROAR_Gym.envs:ROARPIDEnv',
 )
+register(
+    id='roar-local-planner-v0',
+    entry_point='ROAR_Gym.envs:LocalPlannerEnv'
+)

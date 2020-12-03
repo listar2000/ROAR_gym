@@ -23,6 +23,7 @@ class ROAREnv(gym.Env, ABC):
         Args:
             params:
         """
+        self.env_params = params
         carla_config: CarlaConfig = params["carla_config"]
         agent_config: AgentConfig = params["agent_config"]
         ego_agent_class = params.get("ego_agent_class", Agent)
@@ -80,7 +81,9 @@ class ROAREnv(gym.Env, ABC):
                                         carla_settings=self.carla_config,
                                         npc_agent_class=self.npc_agent_class)
         vehicle = self.carla_runner.set_carla_world()
-        self.agent = self.EgoAgentClass(vehicle=vehicle, agent_settings=self.agent_config)
+        self.agent = self.EgoAgentClass(vehicle=vehicle,
+                                        agent_settings=self.agent_config,
+                                        kwargs=self.env_params)
         self.clock: Optional[pygame.time.Clock] = None
         self._start_game()
         return self._get_obs()

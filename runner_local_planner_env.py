@@ -15,19 +15,20 @@ import ROAR_Gym
 from ROAR_Sim.configurations.configuration import Configuration as CarlaConfig
 from ROAR.configurations.configuration import Configuration as AgentConfig
 from ROAR.agent_module.agent import Agent
-from ROAR.agent_module.rl_pid_agent import RLPIDAgent
+from ROAR.agent_module.rl_local_planner_agent import RLLocalPlannerAgent
 from stable_baselines.ddpg.policies import LnMlpPolicy
 from stable_baselines import DDPG
 from datetime import datetime
 from stable_baselines.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList
 from utilities import find_latest_model
+
 try:
     from ROAR_Gym.envs.roar_env import LoggingCallback
 except:
     from ROAR_Gym.ROAR_Gym.envs.roar_env import LoggingCallback
 
 
-def main(output_folder_path:Path):
+def main(output_folder_path: Path):
     # Set gym-carla environment
     agent_config = AgentConfig.parse_file(Path("configurations/agent_configuration.json"))
     carla_config = CarlaConfig.parse_file(Path("configurations/carla_configuration.json"))
@@ -35,11 +36,13 @@ def main(output_folder_path:Path):
     params = {
         "agent_config": agent_config,
         "carla_config": carla_config,
-        "ego_agent_class": RLPIDAgent,
-        "max_collision": 5
+        "ego_agent_class": RLLocalPlannerAgent,
+        "max_collision": 5,
+        "rl_pid_model_file_path": Path(os.getcwd()).parent / "ROAR_Sim" /
+                                  "data" / "weights" / "rl_pid_model.zip"
     }
 
-    env = gym.make('roar-pid-v0', params=params)
+    env = gym.make('roar-local-planner-v0', params=params)
     env.reset()
 
     model_params: dict = {
@@ -47,7 +50,7 @@ def main(output_folder_path:Path):
         "render": True,
         "tensorboard_log": (output_folder_path / "tensorboard").as_posix()
     }
-    latest_model_path = find_latest_model(output_folder_path)
+    latest_model_path = find_latest_model(Path(output_folder_path))
     if latest_model_path is None:
         model = DDPG(LnMlpPolicy, env=env, **model_params)  # full tensorboard log can take up space quickly
     else:
@@ -57,7 +60,7 @@ def main(output_folder_path:Path):
 
     logging_callback = LoggingCallback(model=model)
     checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path=(output_folder_path / "logs").as_posix())
-    event_callback = EveryNTimesteps(n_steps=100, callback=checkpoint_callback)
+    event_callback = EveryNTimesteps(n_steps=500, callback=checkpoint_callback)
     callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
     model = model.learn(total_timesteps=int(1e10), callback=callbacks, reset_num_timesteps=False)
     model.save(f"pid_ddpg_{datetime.now()}")
@@ -69,4 +72,3 @@ if __name__ == '__main__':
     logging.getLogger("Controller").setLevel(logging.ERROR)
     logging.getLogger("SimplePathFollowingLocalPlanner").setLevel(logging.ERROR)
     main(output_folder_path=Path(os.getcwd()) / "output" / "local_planner")
-

@@ -12,6 +12,7 @@ from typing import List, Any
 import gym
 import math
 from collections import OrderedDict
+from gym.wrappers import FlattenDictWrapper
 
 
 class ROARPIDEnv(ROAREnv):
@@ -63,13 +64,6 @@ class ROARPIDEnv(ROAREnv):
                                self.agent.vehicle.control.throttle,
                                self.agent.vehicle.control.steering])
         return curr_speed
-        # curr_transform = self.agent.vehicle.transform.location.to_array()
-        # if len(self.agent.local_planner.way_points_queue) > 0:
-        #     next_waypoint_transform = self.agent.local_planner.way_points_queue[0].location.to_array()
-        # else:
-        #     next_waypoint_transform = curr_transform
-        # result = np.append(np.append(curr_speed, curr_transform), next_waypoint_transform)
-        # return result
 
     def get_reward(self) -> float:
         reward: float = 0.0
