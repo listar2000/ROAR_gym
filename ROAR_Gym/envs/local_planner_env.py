@@ -10,7 +10,7 @@ from ROAR.utilities_module.data_structures_models import Transform, Location, Ro
 from pathlib import Path
 import os
 from ROAR.utilities_module.vehicle_models import Vehicle
-
+import cv2
 
 class LocalPlannerEnv(ROAREnv):
     def __init__(self, params: Dict[str, Any]):
@@ -19,18 +19,16 @@ class LocalPlannerEnv(ROAREnv):
         self.action_space = gym.spaces.Box(low=np.array([-1000, -1000, -1000]),
                                            high=np.array([1000, 1000, 1000]),
                                            dtype=float)
-        # observation space = depth map, current throttle, current steering
-        observation_space_dict: Dict[str, gym.spaces.Box] = {
-            "depth": gym.spaces.Box(low=0, high=1, shape=(800, 600, 1), dtype=np.float64),
-            "curr_throttle": gym.spaces.Box(low=np.array([0]), high=np.array([1]), dtype=np.float64),
-            "curr_steering": gym.spaces.Box(low=np.array([-1]), high=np.array([1]), dtype=np.float64)
-        }
-
-        size = 0
-        for key in observation_space_dict.keys():
-            shape = observation_space_dict[key].shape
-            size += np.prod(shape)
-        self.observation_space = gym.spaces.Box(-np.inf, np.inf, shape=(size,), dtype=np.float64)
+        # observation space = occupancy map
+        # observation_space_dict: Dict[str, gym.spaces.Box] = {
+        #     "occu_map": gym.spaces.Box(low=0, high=1, shape=(1180, 1180), dtype=np.float32),
+        # }
+        #
+        # size = 0
+        # for key in observation_space_dict.keys():
+        #     shape = observation_space_dict[key].shape
+        #     size += np.prod(shape)
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(200, 200, 1), dtype=np.float32)
 
         self._prev_speed = 0
         self._prev_waypoint = None
@@ -89,12 +87,13 @@ class LocalPlannerEnv(ROAREnv):
         return info
 
     def _get_obs(self) -> Any:
-        if self.agent.front_depth_camera.data is not None:
-            depth_image = self.agent.front_depth_camera.data.copy()
+        if self.agent.occupancy_map is not None:
+            occu_map = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
+                                                        view_size=(200, 200))
+            occu_map = np.expand_dims(occu_map, axis=2)
         else:
-            depth_image = np.zeros(shape=(800, 600, 1))
+            occu_map = np.zeros(shape=(200, 200, 1))
 
-        curr_throttle = np.array([self.agent.vehicle.control.throttle])
-        curr_steering = np.array([self.agent.vehicle.control.steering])
-        obs = [np.ravel(depth_image), curr_throttle, curr_steering]
-        return np.concatenate(obs)
+        cv2.imshow("occu", occu_map)
+        cv2.waitKey(1)
+        return occu_map

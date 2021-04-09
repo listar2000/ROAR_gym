@@ -16,7 +16,7 @@ from ROAR_Sim.configurations.configuration import Configuration as CarlaConfig
 from ROAR.configurations.configuration import Configuration as AgentConfig
 from ROAR.agent_module.agent import Agent
 from ROAR.agent_module.rl_local_planner_agent import RLLocalPlannerAgent
-from stable_baselines.ddpg.policies import LnMlpPolicy
+from stable_baselines.ddpg.policies import LnCnnPolicy, LnMlpPolicy
 from stable_baselines import DDPG
 from datetime import datetime
 from stable_baselines.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList
@@ -52,7 +52,7 @@ def main(output_folder_path: Path):
     }
     latest_model_path = find_latest_model(Path(output_folder_path))
     if latest_model_path is None:
-        model = DDPG(LnMlpPolicy, env=env, **model_params)  # full tensorboard log can take up space quickly
+        model = DDPG(LnCnnPolicy, env=env, **model_params)  # full tensorboard log can take up space quickly
     else:
         model = DDPG.load(latest_model_path, env=env, **model_params)
         model.render = True
