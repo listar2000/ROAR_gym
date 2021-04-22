@@ -16,7 +16,7 @@ from ROAR_Sim.configurations.configuration import Configuration as CarlaConfig
 from ROAR.configurations.configuration import Configuration as AgentConfig
 from ROAR.agent_module.agent import Agent
 from ROAR.agent_module.rl_local_planner_agent import RLLocalPlannerAgent
-from stable_baselines.ddpg.policies import LnCnnPolicy, LnMlpPolicy
+from stable_baselines.ddpg.policies import LnCnnPolicy
 from stable_baselines import DDPG
 from datetime import datetime
 from stable_baselines.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList
@@ -38,8 +38,6 @@ def main(output_folder_path: Path):
         "carla_config": carla_config,
         "ego_agent_class": RLLocalPlannerAgent,
         "max_collision": 5,
-        "rl_pid_model_file_path": Path(os.getcwd()).parent / "ROAR_Sim" /
-                                  "data" / "weights" / "rl_pid_model.zip"
     }
 
     env = gym.make('roar-local-planner-v0', params=params)
@@ -59,11 +57,11 @@ def main(output_folder_path: Path):
         model.tensorboard_log = (output_folder_path / "tensorboard").as_posix()
 
     logging_callback = LoggingCallback(model=model)
-    checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path=(output_folder_path / "logs").as_posix())
-    event_callback = EveryNTimesteps(n_steps=500, callback=checkpoint_callback)
+    checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path=(output_folder_path / "checkpoints").as_posix())
+    event_callback = EveryNTimesteps(n_steps=100, callback=checkpoint_callback)
     callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
     model = model.learn(total_timesteps=int(1e10), callback=callbacks, reset_num_timesteps=False)
-    model.save(f"pid_ddpg_{datetime.now()}")
+    model.save(f"local_planner_ddpg_{datetime.now()}")
 
 
 if __name__ == '__main__':

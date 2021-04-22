@@ -13,6 +13,7 @@ from stable_baselines.common.base_class import BaseRLModel
 from pprint import pformat
 from abc import abstractmethod
 
+
 class ROAREnv(gym.Env, ABC):
     def __init__(self, params: Dict[str, Any]):
         """

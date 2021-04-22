@@ -68,5 +68,5 @@ if __name__ == '__main__':
                         datefmt="%H:%M:%S", level=logging.INFO)
     logging.getLogger("Controller").setLevel(logging.ERROR)
     logging.getLogger("SimplePathFollowingLocalPlanner").setLevel(logging.ERROR)
-    main(output_folder_path=Path(os.getcwd()) / "output" / "local_planner")
+    main(output_folder_path=Path(os.getcwd()) / "output" / "pid")
 
