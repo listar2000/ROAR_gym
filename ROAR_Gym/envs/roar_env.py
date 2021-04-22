@@ -12,7 +12,7 @@ from stable_baselines.common.callbacks import BaseCallback
 from stable_baselines.common.base_class import BaseRLModel
 from pprint import pformat
 from abc import abstractmethod
-
+import time
 
 class ROAREnv(gym.Env, ABC):
     def __init__(self, params: Dict[str, Any]):
@@ -59,6 +59,7 @@ class ROAREnv(gym.Env, ABC):
         Returns:
             Tuple of Observation, reward, is done, other information
         """
+        start = time.time()
         self.clock.tick_busy_loop(60)
         should_continue, carla_control = self.carla_runner.controller.parse_events(client=self.carla_runner.client,
                                                                                    world=self.carla_runner.world,
@@ -70,11 +71,15 @@ class ROAREnv(gym.Env, ABC):
             if self.agent is None:
                 raise Exception(
                     "In autopilot mode, but no agent is defined.")
+
             agent_control = self.agent.run_step(vehicle=new_vehicle,
                                                 sensors_data=sensor_data)
             carla_control = self.carla_runner.carla_bridge.convert_control_from_agent_to_source(agent_control)
         self.carla_runner.world.player.apply_control(carla_control)
-        return self._get_obs(), self.get_reward(), self._terminal(), self._get_info()
+        end = time.time()
+        result = self._get_obs(), self.get_reward(), self._terminal(), self._get_info()
+        print(f"Super step FPS: {1 / (end - start)}")
+        return result
 
     def reset(self) -> Any:
         self.carla_runner.on_finish()

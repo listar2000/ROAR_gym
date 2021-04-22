@@ -38,9 +38,9 @@ class LocalPlannerEnv(ROAREnv):
         start = time.time()
         self._prev_speed = Vehicle.get_speed(self.agent.vehicle)
         self._prev_location = self.agent.vehicle.transform.location
+        curr_occu_map = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
+                                                         view_size=(200, 200))
         if len(self.agent.traditional_local_planner.way_points_queue) > 0:
-            curr_occu_map = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
-                                                             view_size=(200, 200))
 
             occu_map_vehicle_center = np.array(list(zip(*np.where(curr_occu_map == np.min(curr_occu_map))))[0])
             self.correct_next_waypoint_world = self.agent.traditional_local_planner.way_points_queue[0]
@@ -59,13 +59,15 @@ class LocalPlannerEnv(ROAREnv):
 
         self.agent.kwargs["next_waypoint"] = self.my_guess_next_waypoint_world
 
-        agent, reward, is_done, other_info = super(LocalPlannerEnv, self).step(action=self.my_guess_next_waypoint_world)
-
-        obs = self._get_obs()
-        # cv2.imshow("obs", obs)
-        # cv2.waitKey(1)
-        end = time.time()
-        print(f"{1/(end-start)}")
+        self.clock.tick_busy_loop()
+        self.carla_runner.world.tick(self.clock)
+        sensor_data, new_vehicle = self.carla_runner.convert_data()
+        agent_control = self.agent.run_step(vehicle=new_vehicle,
+                                            sensors_data=sensor_data)
+        carla_control = self.carla_runner.carla_bridge.convert_control_from_agent_to_source(agent_control)
+        self.carla_runner.world.player.apply_control(carla_control)
+        obs, reward, is_done, other_info = self._get_obs(), self.get_reward(), self._terminal(), self._get_info()
+        print(f"FPS: {1/(time.time() - start)}")
         return obs, reward, is_done, other_info
 
     def get_reward(self) -> float:

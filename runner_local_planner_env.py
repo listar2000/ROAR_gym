@@ -16,7 +16,7 @@ from ROAR_Sim.configurations.configuration import Configuration as CarlaConfig
 from ROAR.configurations.configuration import Configuration as AgentConfig
 from ROAR.agent_module.agent import Agent
 from ROAR.agent_module.rl_local_planner_agent import RLLocalPlannerAgent
-from stable_baselines.ddpg.policies import LnCnnPolicy
+from stable_baselines.ddpg.policies import CnnPolicy
 from stable_baselines import DDPG
 from datetime import datetime
 from stable_baselines.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList
@@ -45,17 +45,15 @@ def main(output_folder_path: Path):
 
     model_params: dict = {
         "verbose": 1,
-        "render": True,
-        "tensorboard_log": (output_folder_path / "tensorboard").as_posix()
+        "render": True
     }
     latest_model_path = find_latest_model(Path(output_folder_path))
     if latest_model_path is None:
-        model = DDPG(LnCnnPolicy, env=env, **model_params)  # full tensorboard log can take up space quickly
+        model = DDPG(CnnPolicy, nb_rollout_steps=500, nb_train_steps=500, env=env, **model_params)  # full tensorboard log can take up space quickly
     else:
         model = DDPG.load(latest_model_path, env=env, **model_params)
-        model.render = True
-        model.tensorboard_log = (output_folder_path / "tensorboard").as_posix()
-
+    model.tensorboard_log = (output_folder_path / "tensorboard").as_posix()
+    model.render = True
     logging_callback = LoggingCallback(model=model)
     checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path=(output_folder_path / "checkpoints").as_posix())
     event_callback = EveryNTimesteps(n_steps=100, callback=checkpoint_callback)

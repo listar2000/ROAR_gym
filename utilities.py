@@ -5,7 +5,7 @@ from typing import Dict, Optional
 def find_latest_model(root_path: Path) -> Optional[Path]:
     import os
     from pathlib import Path
-    logs_path = (root_path / "logs")
+    logs_path = (root_path / "checkpoints")
     if logs_path.exists() is False:
         print(f"No previous record found in {logs_path}")
         return None
