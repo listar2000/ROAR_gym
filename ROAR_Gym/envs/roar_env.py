@@ -66,7 +66,8 @@ class ROAREnv(gym.Env, ABC):
                                                                                    clock=self.clock)
 
         self.carla_runner.world.tick(self.clock)
-        sensor_data, new_vehicle = self.carla_runner.convert_data()
+        self.carla_runner.fetch_data_async()
+        sensor_data, new_vehicle = self.carla_runner.sensor_data.copy(), self.carla_runner.vehicle_state.copy()
         if self.carla_runner.agent_settings.enable_autopilot:
             if self.agent is None:
                 raise Exception(

@@ -13,3 +13,7 @@ register(
     id='roar-local-planner-v0',
     entry_point='ROAR_Gym.envs:LocalPlannerEnv'
 )
+register(
+    id='roar-local-planner-v1',
+    entry_point='ROAR_Gym.envs:LocalPlannerEnv1'
+)

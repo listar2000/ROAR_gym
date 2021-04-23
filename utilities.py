@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Dict, Optional
+from typing import Tuple
 
 
 def find_latest_model(root_path: Path) -> Optional[Path]:
@@ -17,3 +18,11 @@ def find_latest_model(root_path: Path) -> Optional[Path]:
         return None
     latest_model_file_path: Optional[Path] = paths_dict.get(max(paths_dict.keys()), None)
     return latest_model_file_path
+
+
+def prep_dir(output_folder_path: Path) -> Tuple[Path, Path]:
+    tensorboard_dir = (output_folder_path / "tensorboard")
+    ckpt_dir = (output_folder_path / "checkpoints")
+    tensorboard_dir.mkdir(parents=True, exist_ok=True)
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+    return tensorboard_dir, ckpt_dir
