@@ -21,7 +21,7 @@ class LocalPlannerEnv(ROAREnv):
         # action space = next waypoint
         self.action_space = gym.spaces.Box(low=np.array([0, 0]),
                                            high=np.array([200, 200]),
-                                           dtype=np.intc)
+                                           dtype=np.int)
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(200, 200, 1), dtype=np.float32)
 
         self._prev_speed = 0
@@ -35,7 +35,8 @@ class LocalPlannerEnv(ROAREnv):
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         assert type(action) == list or type(action) == np.ndarray, f"Action is not recognizable"
         assert len(action) == 2, f"Action should be of length 2 but is of length [{len(action)}]."
-        start = time.time()
+        start_init = time.time()
+        # start = time.time()
         self._prev_speed = Vehicle.get_speed(self.agent.vehicle)
         self._prev_location = self.agent.vehicle.transform.location
         curr_occu_map = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
@@ -57,16 +58,37 @@ class LocalPlannerEnv(ROAREnv):
                 occu_vehicle_center=occu_map_vehicle_center)
 
         self.agent.kwargs["next_waypoint"] = self.my_guess_next_waypoint_world
-
-        self.clock.tick_busy_loop()
+        # print(f"NN Setting took: {time.time() - start} -> {1/ (time.time() - start)}")
+        # start = time.time()
+        self.clock.tick()
         self.carla_runner.world.tick(self.clock)
-        sensor_data, new_vehicle = self.carla_runner.convert_data()
-        agent_control = self.agent.run_step(vehicle=new_vehicle,
-                                            sensors_data=sensor_data)
+
+        # print(f"Ticking: {time.time() - start} -> {1 / (time.time() - start)}")
+        # start = time.time()
+
+        self.carla_runner.fetch_data_async()
+
+        # print(f"Convert data carla -> agent: {time.time() - start} -> {1 / (time.time() - start)}")
+        # start = time.time()
+
+        agent_control = self.agent.run_step(vehicle=self.carla_runner.vehicle_state,
+                                            sensors_data=self.carla_runner.sensor_data)
+
+        # print(f"Agent run step: {time.time() - start} -> {1 / (time.time() - start)}")
+        # start = time.time()
+
         carla_control = self.carla_runner.carla_bridge.convert_control_from_agent_to_source(agent_control)
+
+        # print(f"convert data agent -> carla: {time.time() - start} -> {1 / (time.time() - start)}")
+        # start = time.time()
+
         self.carla_runner.world.player.apply_control(carla_control)
+        # print(f"Carla Run took {time.time() - start} -> {1/ (time.time() - start)}")
+        # start = time.time()
         obs, reward, is_done, other_info = self._get_obs(), self.get_reward(), self._terminal(), self._get_info()
-        print(f"FPS: {1/(time.time() - start)}")
+        # print(f"Get Output took {time.time() - start} -> {1/ (time.time() - start)}")
+        # print(f"Final overall time took {time.time() - start_init} -> {1/ (time.time() - start_init)}")
+        # input("Enter to continue")
         return obs, reward, is_done, other_info
 
     def get_reward(self) -> float:
@@ -91,7 +113,7 @@ class LocalPlannerEnv(ROAREnv):
             curr_location: Location = self.agent.vehicle.transform.location
             if curr_location.distance(next_waypoint.location) < curr_location.distance(self._prev_location):
                 print("Getting closer to next waypoint!!!")
-                reward += 10
+                reward += 1000
         if Vehicle.get_speed(self.agent.vehicle) < 10:
             reward -= 10
         if Vehicle.get_speed(self.agent.vehicle) > 80:

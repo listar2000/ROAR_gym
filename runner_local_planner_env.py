@@ -45,7 +45,7 @@ def main(output_folder_path: Path):
         "verbose": 1,
         "render": True,
         "env": env,
-        "n_cpu_tf_sess": 8,
+        "n_cpu_tf_sess": None,
         "policy_kwargs": {
             "reuse": True
         }
