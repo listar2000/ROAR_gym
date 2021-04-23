@@ -40,9 +40,8 @@ class LocalPlannerEnv(ROAREnv):
         self._prev_location = self.agent.vehicle.transform.location
         curr_occu_map = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
                                                          view_size=(200, 200))
+        occu_map_vehicle_center = np.array(list(zip(*np.where(curr_occu_map == np.min(curr_occu_map))))[0])
         if len(self.agent.traditional_local_planner.way_points_queue) > 0:
-
-            occu_map_vehicle_center = np.array(list(zip(*np.where(curr_occu_map == np.min(curr_occu_map))))[0])
             self.correct_next_waypoint_world = self.agent.traditional_local_planner.way_points_queue[0]
 
             diff = np.array([self.correct_next_waypoint_world.location.x,
@@ -51,11 +50,11 @@ class LocalPlannerEnv(ROAREnv):
                              self.agent.vehicle.transform.location.z])
             self.correct_next_waypoint_occu = occu_map_vehicle_center + diff
 
-        self.my_guess_next_waypoint_occu = np.array(action)
-        self.my_guess_next_waypoint_world = self.agent.occupancy_map.cropped_occu_to_world(
-            cropped_occu_coord=self.my_guess_next_waypoint_occu,
-            vehicle_transform=self.agent.vehicle.transform,
-            occu_vehicle_center=occu_map_vehicle_center)
+            self.my_guess_next_waypoint_occu = np.array(action)
+            self.my_guess_next_waypoint_world = self.agent.occupancy_map.cropped_occu_to_world(
+                cropped_occu_coord=self.my_guess_next_waypoint_occu,
+                vehicle_transform=self.agent.vehicle.transform,
+                occu_vehicle_center=occu_map_vehicle_center)
 
         self.agent.kwargs["next_waypoint"] = self.my_guess_next_waypoint_world
 

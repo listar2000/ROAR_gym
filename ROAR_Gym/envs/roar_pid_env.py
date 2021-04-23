@@ -12,7 +12,6 @@ from typing import List, Any
 import gym
 import math
 from collections import OrderedDict
-from gym.wrappers import FlattenDictWrapper
 
 
 class ROARPIDEnv(ROAREnv):
