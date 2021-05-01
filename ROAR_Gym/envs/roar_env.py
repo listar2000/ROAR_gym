@@ -8,8 +8,10 @@ from typing import Optional, Tuple, Any, Dict
 from ROAR.agent_module.pure_pursuit_agent import PurePursuitAgent
 from ROAR.agent_module.agent import Agent
 from abc import ABC
-from stable_baselines.common.callbacks import BaseCallback
+# from stable_baselines3.common.callbacks import BaseCallback
+# from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines.common.base_class import BaseRLModel
+from stable_baselines.common.callbacks import BaseCallback
 from pprint import pformat
 from abc import abstractmethod
 import time
@@ -59,7 +61,6 @@ class ROAREnv(gym.Env, ABC):
         Returns:
             Tuple of Observation, reward, is done, other information
         """
-        start = time.time()
         self.clock.tick_busy_loop(60)
         should_continue, carla_control = self.carla_runner.controller.parse_events(client=self.carla_runner.client,
                                                                                    world=self.carla_runner.world,
@@ -77,12 +78,12 @@ class ROAREnv(gym.Env, ABC):
                                                 sensors_data=sensor_data)
             carla_control = self.carla_runner.carla_bridge.convert_control_from_agent_to_source(agent_control)
         self.carla_runner.world.player.apply_control(carla_control)
-        end = time.time()
         result = self._get_obs(), self.get_reward(), self._terminal(), self._get_info()
-        print(f"Super step FPS: {1 / (end - start)}")
         return result
 
     def reset(self) -> Any:
+        if self.agent is not None:
+            self.agent.shutdown_module_threads()
         self.carla_runner.on_finish()
         self.carla_runner = CarlaRunner(agent_settings=self.agent_config,
                                         carla_settings=self.carla_config,
@@ -140,7 +141,6 @@ class LoggingCallback(BaseCallback):
     def _on_step(self) -> bool:
         curr_step = self.locals.get("step")
         info = self.locals.get("info")
-
-        msg = f"Step = {curr_step} \n{pformat(info)}"
+        msg = f"Step = {curr_step} \n{pformat(info)}\n"
         self.logger.log(msg)
         return True

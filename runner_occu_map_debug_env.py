@@ -11,12 +11,13 @@ from pathlib import Path
 
 sys.path.append(Path(os.getcwd()).parent.as_posix())
 import gym
+import ROAR_Gym
 from ROAR_Sim.configurations.configuration import Configuration as CarlaConfig
 from ROAR.configurations.configuration import Configuration as AgentConfig
-from ROAR.agent_module.rl_local_planner_agent import RLLocalPlannerAgent
-from stable_baselines.ddpg.policies import CnnPolicy
-# from stable_baselines.common.policies import CnnPolicy
-from stable_baselines import DDPG, PPO2
+from ROAR.agent_module.agent import Agent
+from ROAR.agent_module.occu_debug_agent import OccuDebugAgent
+from stable_baselines.ddpg.policies import LnCnnPolicy
+from stable_baselines import DDPG
 from datetime import datetime
 from stable_baselines.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList
 from utilities import find_latest_model
@@ -35,41 +36,33 @@ def main(output_folder_path: Path):
     params = {
         "agent_config": agent_config,
         "carla_config": carla_config,
-        "ego_agent_class": RLLocalPlannerAgent,
-        "max_collision": 5,
+        "ego_agent_class": OccuDebugAgent,
+        "max_collision": 5
     }
 
-    env = gym.make('roar-local-planner-v0', params=params)
+    env = gym.make('roar-occu-debug-v0', params=params)
     env.reset()
 
     model_params: dict = {
         "verbose": 1,
         "render": True,
-        "env": env,
-        "n_cpu_tf_sess": None,
-        "buffer_size": 1000,
-        "nb_train_steps": 50,
-        "nb_rollout_steps": 100,
-        # "nb_eval_steps": 50,
-        "batch_size": 32,
+        "tensorboard_log": (output_folder_path / "tensorboard").as_posix()
     }
-    latest_model_path = find_latest_model(Path(output_folder_path))
+    latest_model_path = find_latest_model(output_folder_path)
     if latest_model_path is None:
-        model = DDPG(CnnPolicy, **model_params)
+        model = DDPG(LnCnnPolicy, env=env, **model_params)  # full tensorboard log can take up space quickly
     else:
-        model = DDPG.load(latest_model_path, **model_params)
-    tensorboard_dir = (output_folder_path / "tensorboard")
-    ckpt_dir = (output_folder_path / "checkpoints")
-    tensorboard_dir.mkdir(parents=True, exist_ok=True)
-    ckpt_dir.mkdir(parents=True, exist_ok=True)
-    model.tensorboard_log = tensorboard_dir.as_posix()
-    model.render = True
+        model = DDPG.load(latest_model_path, env=env, **model_params)
+        model.render = True
+        model.tensorboard_log = (output_folder_path / "tensorboard").as_posix()
+
     logging_callback = LoggingCallback(model=model)
-    checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path=ckpt_dir.as_posix())
+    checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2,
+                                             save_path=(output_folder_path / "logs").as_posix())
     event_callback = EveryNTimesteps(n_steps=100, callback=checkpoint_callback)
     callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
     model = model.learn(total_timesteps=int(1e10), callback=callbacks, reset_num_timesteps=False)
-    model.save(f"local_planner_ddpg_{datetime.now()}")
+    model.save(f"pid_ddpg_{datetime.now()}")
 
 
 if __name__ == '__main__':
@@ -77,4 +70,4 @@ if __name__ == '__main__':
                         datefmt="%H:%M:%S", level=logging.INFO)
     logging.getLogger("Controller").setLevel(logging.ERROR)
     logging.getLogger("SimplePathFollowingLocalPlanner").setLevel(logging.ERROR)
-    main(output_folder_path=Path(os.getcwd()) / "output" / "local_planner")
+    main(output_folder_path=Path(os.getcwd()) / "output" / "occu_debug")

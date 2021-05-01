@@ -40,6 +40,7 @@ class LocalPlannerEnv1(ROAREnv):
         assert len(action) == 2, f"Action should be of length 2 but is of length [{len(action)}]."
         self._prev_speed = Vehicle.get_speed(self.agent.vehicle)
         self._prev_location = self.agent.vehicle.transform.location
+
         action = np.array(action).astype(np.int64)
         self.action = action
         if len(self.agent.traditional_local_planner.way_points_queue) > 0:

@@ -13,7 +13,7 @@ sys.path.append(Path(os.getcwd()).parent.as_posix())
 import gym
 from ROAR_Sim.configurations.configuration import Configuration as CarlaConfig
 from ROAR.configurations.configuration import Configuration as AgentConfig
-from ROAR.agent_module.rl_local_planner_agent import RLLocalPlannerAgent
+from ROAR.agent_module.rl_depth_e2e_agent import RLDepthE2EAgent
 from stable_baselines.ddpg.policies import CnnPolicy
 # from stable_baselines.common.policies import CnnPolicy
 from stable_baselines import DDPG, PPO2
@@ -35,11 +35,11 @@ def main(output_folder_path: Path):
     params = {
         "agent_config": agent_config,
         "carla_config": carla_config,
-        "ego_agent_class": RLLocalPlannerAgent,
+        "ego_agent_class": RLDepthE2EAgent,
         "max_collision": 5,
     }
 
-    env = gym.make('roar-local-planner-v0', params=params)
+    env = gym.make('roar-depth-e2e-v0', params=params)
     env.reset()
 
     model_params: dict = {
@@ -62,14 +62,12 @@ def main(output_folder_path: Path):
     ckpt_dir = (output_folder_path / "checkpoints")
     tensorboard_dir.mkdir(parents=True, exist_ok=True)
     ckpt_dir.mkdir(parents=True, exist_ok=True)
-    model.tensorboard_log = tensorboard_dir.as_posix()
-    model.render = True
     logging_callback = LoggingCallback(model=model)
     checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path=ckpt_dir.as_posix())
     event_callback = EveryNTimesteps(n_steps=100, callback=checkpoint_callback)
     callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
     model = model.learn(total_timesteps=int(1e10), callback=callbacks, reset_num_timesteps=False)
-    model.save(f"local_planner_ddpg_{datetime.now()}")
+    model.save(f"depth_e2e_ddpg_{datetime.now()}")
 
 
 if __name__ == '__main__':
@@ -77,4 +75,4 @@ if __name__ == '__main__':
                         datefmt="%H:%M:%S", level=logging.INFO)
     logging.getLogger("Controller").setLevel(logging.ERROR)
     logging.getLogger("SimplePathFollowingLocalPlanner").setLevel(logging.ERROR)
-    main(output_folder_path=Path(os.getcwd()) / "output" / "local_planner")
+    main(output_folder_path=Path(os.getcwd()) / "output" / "depth_e2e")
