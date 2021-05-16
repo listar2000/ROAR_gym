@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Dict, Optional
-from typing import Tuple
+from typing import Tuple, List
 
 
 def find_latest_model(root_path: Path) -> Optional[Path]:
