@@ -1,6 +1,5 @@
 import warnings
 import logging
-from typing import Optional, Dict
 
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 logging.getLogger("numpy").setLevel(logging.ERROR)
@@ -13,10 +12,10 @@ sys.path.append(Path(os.getcwd()).parent.as_posix())
 import gym
 from ROAR_Sim.configurations.configuration import Configuration as CarlaConfig
 from ROAR.configurations.configuration import Configuration as AgentConfig
-from ROAR.agent_module.rl_depth_e2e_agent import RLDepthE2EAgent
+from ROAR.agent_module.legacy_agents.rl_depth_e2e_agent import RLDepthE2EAgent
 from stable_baselines.ddpg.policies import CnnPolicy
 # from stable_baselines.common.policies import CnnPolicy
-from stable_baselines import DDPG, PPO2
+from stable_baselines import DDPG
 from datetime import datetime
 from stable_baselines.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList
 from utilities import find_latest_model

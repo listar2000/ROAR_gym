@@ -1,4 +1,4 @@
-from typing import Any, Tuple, Dict
+from typing import Any, Tuple
 from collections import OrderedDict
 
 try:
@@ -7,16 +7,13 @@ except:
     from ROAR_Gym.ROAR_Gym.envs.roar_env import ROAREnv
 import gym
 import numpy as np
-from ROAR.utilities_module.data_structures_models import Transform, Location, Rotation
+from ROAR.utilities_module.data_structures_models import Location
 from pathlib import Path
-import os
 from ROAR.utilities_module.vehicle_models import Vehicle, VehicleControl
 from typing import Optional
-import cv2
-import time
 from ROAR_Sim.configurations.configuration import Configuration as CarlaConfig
 from ROAR.configurations.configuration import Configuration as AgentConfig
-from ROAR.agent_module.rl_occu_map_e2e_training_agent import RLOccuMapE2ETrainingAgent
+from ROAR.agent_module.legacy_agents.rl_occu_map_e2e_training_agent import RLOccuMapE2ETrainingAgent
 
 
 class OccuMapE2EEnv(ROAREnv):

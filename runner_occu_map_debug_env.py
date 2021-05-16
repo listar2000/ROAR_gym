@@ -1,6 +1,5 @@
 import warnings
 import logging
-from typing import Optional, Dict
 
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 logging.getLogger("numpy").setLevel(logging.ERROR)
@@ -11,11 +10,9 @@ from pathlib import Path
 
 sys.path.append(Path(os.getcwd()).parent.as_posix())
 import gym
-import ROAR_Gym
 from ROAR_Sim.configurations.configuration import Configuration as CarlaConfig
 from ROAR.configurations.configuration import Configuration as AgentConfig
-from ROAR.agent_module.agent import Agent
-from ROAR.agent_module.occu_debug_agent import OccuDebugAgent
+from ROAR.agent_module.legacy_agents.occu_debug_agent import OccuDebugAgent
 from stable_baselines.ddpg.policies import LnCnnPolicy
 from stable_baselines import DDPG
 from datetime import datetime

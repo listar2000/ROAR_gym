@@ -43,12 +43,15 @@ class LocalPlannerEnv(ROAREnv):
         self.agent.kwargs["control"] = VehicleControl(throttle=action[0], steering=action[1])
         obs, reward, is_done, other_info = super(LocalPlannerEnv, self).step(action)
 
-        # obs, reward, is_done, other_info = self._get_obs(), self.get_reward(), self._terminal(), self._get_info()
-
         return obs, reward, is_done, other_info
 
     def get_reward(self) -> float:
-       return 0.0
+        return 0.0
+
+    def render(self, mode='ego'):
+        super(LocalPlannerEnv, self).render(mode)
+        cv2.imshow("obs", self.agent.get_obs())
+        cv2.waitKey(1)
 
     def _get_info(self) -> dict:
         self.info['speed'] = Vehicle.get_speed(self.agent.vehicle)
