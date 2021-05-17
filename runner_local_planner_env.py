@@ -47,11 +47,12 @@ def main(output_folder_path: Path):
         "render": True,
         "env": env,
         "n_cpu_tf_sess": None,
-        "buffer_size": 1000,
-        "nb_train_steps": 50,
-        "nb_rollout_steps": 100,
+        # "buffer_size": 1000,
+        # "nb_train_steps": 50,
+        # "nb_rollout_steps": 100,
         # "nb_eval_steps": 50,
-        "batch_size": 32,
+        "random_exploration": 0.2,
+        # "batch_size": 32,
     }
     latest_model_path = find_latest_model(Path(output_folder_path))
     if latest_model_path is None:
@@ -63,7 +64,6 @@ def main(output_folder_path: Path):
     tensorboard_dir.mkdir(parents=True, exist_ok=True)
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     model.tensorboard_log = tensorboard_dir.as_posix()
-    model.render = True
     logging_callback = LoggingCallback(model=model)
     checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path=ckpt_dir.as_posix())
     event_callback = EveryNTimesteps(n_steps=100, callback=checkpoint_callback)
