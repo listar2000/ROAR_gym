@@ -8,8 +8,8 @@ from typing import Optional, Tuple, Any, Dict
 from ROAR.agent_module.pure_pursuit_agent import PurePursuitAgent
 from ROAR.agent_module.agent import Agent
 from abc import ABC
-from stable_baselines.common.callbacks import BaseCallback
-from stable_baselines.common.base_class import BaseRLModel
+from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.base_class import BaseAlgorithm
 from pprint import pformat
 
 class ROAREnv(gym.Env, ABC):
@@ -59,15 +59,14 @@ class ROAREnv(gym.Env, ABC):
         should_continue, carla_control = self.carla_runner.controller.parse_events(client=self.carla_runner.client,
                                                                                    world=self.carla_runner.world,
                                                                                    clock=self.clock)
-
         self.carla_runner.world.tick(self.clock)
-        sensor_data, new_vehicle = self.carla_runner.convert_data()
+        self.carla_runner.convert_data()
         if self.carla_runner.agent_settings.enable_autopilot:
             if self.agent is None:
                 raise Exception(
                     "In autopilot mode, but no agent is defined.")
-            agent_control = self.agent.run_step(vehicle=new_vehicle,
-                                                sensors_data=sensor_data)
+            agent_control = self.agent.run_step(vehicle=self.carla_runner.vehicle_state,
+                                                sensors_data=self.carla_runner.sensor_data)
             carla_control = self.carla_runner.carla_bridge.convert_control_from_agent_to_source(agent_control)
         self.carla_runner.world.player.apply_control(carla_control)
         return self._get_obs(), self.get_reward(), self._terminal(), self._get_info()
@@ -118,7 +117,7 @@ class ROAREnv(gym.Env, ABC):
 
 
 class LoggingCallback(BaseCallback):
-    def __init__(self, model: BaseRLModel, verbose=0):
+    def __init__(self, model: BaseAlgorithm, verbose=0):
         super().__init__(verbose)
         self.init_callback(model=model)
 
