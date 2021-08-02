@@ -27,7 +27,7 @@ DISCRETE_ACTIONS = {
     7: [-0.5, -0.5],  # Bear Left & decelerate
     8: [-0.5, 0.5],  # Bear Right & decelerate
 }
-FRAME_STACK = 10
+FRAME_STACK = 4
 CONFIG = {
     "x_res": 80,
     "y_res": 80
@@ -39,6 +39,8 @@ class ROAREnvE2E(ROAREnv):
         super().__init__(params)
         self.action_space = Discrete(len(DISCRETE_ACTIONS))
         self.observation_space = Box(-1, 1, shape=(FRAME_STACK, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
+        self.prev_speed = 0
+        self.prev_dist = 0
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         print("Running step")
@@ -54,10 +56,23 @@ class ROAREnvE2E(ROAREnv):
             if is_done:
                 break
         self.render()
-        return np.array(obs), sum(rewards), False, dict()
+        return np.array(obs), sum(rewards), False, {"reward": sum(rewards)}
 
     def get_reward(self) -> float:
-        return 0.0
+        # prep for reward computation
+        reward = 0
+        curr_waypoint = self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()]
+        curr_dist = self.agent.vehicle.transform.location.distance(curr_waypoint.location)
+
+        # reward computation
+        reward += 0.05 * (Vehicle.get_speed(self.agent.vehicle) - self.prev_speed)
+        reward += np.clip(self.prev_dist - curr_dist, -10, 10)
+        reward -= self.carla_runner.get_num_collision()
+
+        # log prev info for next reward computation
+        self.prev_speed = Vehicle.get_speed(self.agent.vehicle)
+        self.prev_dist = curr_dist
+        return reward
 
     def _get_obs(self) -> np.ndarray:
         depth_image = self.agent.front_depth_camera.data.copy()
