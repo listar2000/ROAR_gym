@@ -123,8 +123,14 @@ class LoggingCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         curr_step = self.locals.get("step")
-        info = self.locals.get("info")
+        info = {
+            "num_collected_steps": self.locals.get("num_collected_steps"),
+            "reward": self.locals.get("reward"),
+            "episode_rewards": self.locals.get("episode_rewards"),
+            "action": self.locals.get("action"),
+            "infos": self.locals.get("infos")
+        }
 
-        msg = f"Step = {curr_step} \n{pformat(info)}"
+        msg = f"{pformat(info)}"
         self.logger.log(msg)
         return True

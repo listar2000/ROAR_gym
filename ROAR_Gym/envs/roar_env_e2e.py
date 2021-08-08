@@ -43,7 +43,6 @@ class ROAREnvE2E(ROAREnv):
         self.prev_dist = 0
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
-        print("Running step")
         obs = []
         rewards = []
 
@@ -56,7 +55,8 @@ class ROAREnvE2E(ROAREnv):
             if is_done:
                 break
         self.render()
-        return np.array(obs), sum(rewards), False, {"reward": sum(rewards)}
+        return np.array(obs), sum(rewards), False, {"reward": sum(rewards),
+                                                    "action": DISCRETE_ACTIONS[action]}
 
     def get_reward(self) -> float:
         # prep for reward computation
@@ -75,9 +75,11 @@ class ROAREnvE2E(ROAREnv):
         return reward
 
     def _get_obs(self) -> np.ndarray:
-        depth_image = self.agent.front_depth_camera.data.copy()
-        data = cv2.resize(depth_image, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
-        # data = np.expand_dims(data, 2)
+        occu_map = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
+                                                    view_size=(200, 200))
+        data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
+        # cv2.imshow("data", data) # uncomment to show occu map
+        # cv2.waitKey(1)
         return data  # height x width x 1 array
 
     def reset(self) -> Any:
