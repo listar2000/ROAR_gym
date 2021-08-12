@@ -40,7 +40,7 @@ def main():
         "ego_agent_class": RLDepthE2EAgent
     }
 
-    model_dir_path = Path("./output/e2e")
+    model_dir_path = Path("./output/e2e_2")
 
     policy_kwargs = dict(
         features_extractor_class=CustomMaxPoolCNN,
@@ -60,7 +60,7 @@ def main():
         exploration_final_eps=0.1,
         exploration_fraction=0.2,
         seed=1,
-
+        device="cuda",
         verbose=1,
         tensorboard_log=(Path(model_dir_path) / "tensorboard").as_posix()
     )

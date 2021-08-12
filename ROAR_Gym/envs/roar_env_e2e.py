@@ -40,7 +40,7 @@ class ROAREnvE2E(ROAREnv):
         self.action_space = Discrete(len(DISCRETE_ACTIONS))
         self.observation_space = Box(-1, 1, shape=(FRAME_STACK, CONFIG["x_res"], CONFIG["y_res"]), dtype=np.float32)
         self.prev_speed = 0
-        self.prev_dist = 0
+        self.prev_dist_to_strip = 0
 
     def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
         obs = []
@@ -55,31 +55,41 @@ class ROAREnvE2E(ROAREnv):
             if is_done:
                 break
         self.render()
-        return np.array(obs), sum(rewards), False, {"reward": sum(rewards),
-                                                    "action": DISCRETE_ACTIONS[action]}
+        return np.array(obs), sum(rewards), self._terminal(), {"reward": sum(rewards),
+                                                               "action": DISCRETE_ACTIONS[action]}
+
+    def _terminal(self) -> bool:
+        if self.carla_runner.get_num_collision() > self.max_collision_allowed:
+            return True
+        else:
+            return False
 
     def get_reward(self) -> float:
         # prep for reward computation
         reward = 0
-        curr_waypoint = self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()]
-        curr_dist = self.agent.vehicle.transform.location.distance(curr_waypoint.location)
+        curr_dist_to_strip = self.agent.curr_dist_to_strip
 
         # reward computation
-        reward += 0.05 * (Vehicle.get_speed(self.agent.vehicle) - self.prev_speed)
-        reward += np.clip(self.prev_dist - curr_dist, -10, 10)
+        reward += 0.5 * (Vehicle.get_speed(self.agent.vehicle) - self.prev_speed)
+        reward += abs(self.agent.vehicle.control.steering)
+        reward += np.clip(self.prev_dist_to_strip - curr_dist_to_strip, -10, 10)
         reward -= self.carla_runner.get_num_collision()
 
         # log prev info for next reward computation
         self.prev_speed = Vehicle.get_speed(self.agent.vehicle)
-        self.prev_dist = curr_dist
+        self.prev_dist_to_strip = curr_dist_to_strip
         return reward
 
     def _get_obs(self) -> np.ndarray:
-        occu_map = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
-                                                    view_size=(200, 200))
-        data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
-        # cv2.imshow("data", data) # uncomment to show occu map
-        # cv2.waitKey(1)
+        # star edited this: it's better to set the view_size directly instead of doing resize
+        data = self.agent.occupancy_map.get_map(transform=self.agent.vehicle.transform,
+                                                view_size=(CONFIG["x_res"], CONFIG["y_res"]),
+                                                arbitrary_locations=self.agent.bbox.get_visualize_locs(size=20),
+                                                arbitrary_point_value=0.5
+                                                )
+        # data = cv2.resize(occu_map, (CONFIG["x_res"], CONFIG["y_res"]), interpolation=cv2.INTER_AREA)
+        cv2.imshow("data", data) # uncomment to show occu map
+        cv2.waitKey(1)
         return data  # height x width x 1 array
 
     def reset(self) -> Any:

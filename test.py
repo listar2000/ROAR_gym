@@ -25,7 +25,7 @@ def main():
     counter = 1
     while True:
         action = [1.0, 0.0]
-        curr_step = env.step(action)
+        curr_step = env.bbox_step(action)
         obs: Agent = curr_step[0]
         reward: float = curr_step[1]
         is_done: bool = curr_step[2]
