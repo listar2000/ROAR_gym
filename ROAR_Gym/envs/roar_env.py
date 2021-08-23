@@ -69,7 +69,7 @@ class ROAREnv(gym.Env, ABC):
                                                 sensors_data=self.carla_runner.sensor_data)
             carla_control = self.carla_runner.carla_bridge.convert_control_from_agent_to_source(agent_control)
         self.carla_runner.world.player.apply_control(carla_control)
-        return self._get_obs(), self.get_reward(), self._terminal(), self._get_info()
+        return self._get_obs(), self.get_reward(action), self._terminal(), self._get_info()
 
     def reset(self) -> Any:
         self.carla_runner.on_finish()
@@ -96,9 +96,13 @@ class ROAREnv(gym.Env, ABC):
         except Exception as e:
             self.logger.error(e)
 
-    def get_reward(self) -> float:
+    def get_reward(self, action: Optional[Any] = None) -> float:
         """
         Intended to be overwritten
+        You can optionally pass in the action at the current step since in certain
+        cases reward calculation might involve the action taken, e.g. encourage/discourage
+        taking certain actions.
+
         Returns:
 
         """

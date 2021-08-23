@@ -66,9 +66,7 @@ class LineBBox(object):
             range_ = size * np.cos(np.arctan(self.slope))
             xs = np.linspace(self.x2 - range_/2, self.x2 + range_/2, num=size)
             zs = self.slope * xs + self.intercept
-            # print(np.vstack((xs, zs)).T)
 
-#         self.strip_list = np.vstack((xs, zs)).T
         self.strip_list = []
         for i in range(len(xs)):
             self.strip_list.append(Location(x=xs[i], y=0, z=zs[i]))
@@ -145,14 +143,14 @@ class LineDetectAgent(Agent):
                 self.int_counter += 1
                 self._get_next_bbox()
 
-            map = self.occupancy_map.get_map(
+            occ_map = self.occupancy_map.get_map(
                 transform=vehicle.transform,
                 view_size=(100, 100),
                 arbitrary_locations=self.bbox.get_visualize_locs(size=20),
                 arbitrary_point_value=0.5
             )
 
-            cv2.imshow("", map)
+            cv2.imshow("", occ_map)
             cv2.waitKey(1)
 
             return crossed, dist

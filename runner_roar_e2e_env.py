@@ -7,6 +7,7 @@ logging.getLogger("numpy").setLevel(logging.ERROR)
 warnings.filterwarnings('ignore')
 import os
 import sys
+import torch as th
 from pathlib import Path
 
 sys.path.append(Path(os.getcwd()).parent.as_posix())
@@ -37,10 +38,11 @@ def main():
     params = {
         "agent_config": agent_config,
         "carla_config": carla_config,
-        "ego_agent_class": RLDepthE2EAgent
+        "ego_agent_class": RLDepthE2EAgent,
+        "max_collision": 3,
     }
 
-    model_dir_path = Path("./output/e2e_2")
+    model_dir_path = Path("./output/e2e_3")
 
     policy_kwargs = dict(
         features_extractor_class=CustomMaxPoolCNN,
@@ -50,8 +52,8 @@ def main():
     training_kwargs = dict(
         learning_rate=0.001,
         buffer_size=5000,
-        batch_size=64,
-        learning_starts=10000,
+        batch_size=32,
+        learning_starts=3000,
         gamma=0.95,
         train_freq=(4, "step"),
         gradient_steps=1,
@@ -60,28 +62,36 @@ def main():
         exploration_final_eps=0.1,
         exploration_fraction=0.2,
         seed=1,
-        device="cuda",
         verbose=1,
         tensorboard_log=(Path(model_dir_path) / "tensorboard").as_posix()
     )
+
+    # setting the device automatically, might need to be moved to a config file
+    if th.cuda.is_available():
+        print("using cuda:0 right now...")
+        training_kwargs["device"] = th.device('cuda:0')
+    else:
+        print("no cuda available, cpu used for training...")
+        training_kwargs["device"] = th.device('cpu')
 
     env = gym.make('roar-e2e-v0', params=params)
     env.reset()
 
     latest_model_path = find_latest_model(model_dir_path)
+    print(latest_model_path)
 
     if latest_model_path is None:
         model = DQN(CnnPolicy, env=env, policy_kwargs=policy_kwargs, **training_kwargs)
     else:
         model = DQN.load(latest_model_path, env=env, policy_kwargs=policy_kwargs, **training_kwargs)
     print("Model Loaded Successfully")
-    logging_callback = LoggingCallback(model=model)
-    checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path=(model_dir_path/"logs").as_posix())
-    event_callback = EveryNTimesteps(n_steps=100, callback=checkpoint_callback)
-    callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
-    model = model.learn(total_timesteps=int(1e10), callback=callbacks, reset_num_timesteps=False)
-    # model.save(model_dir_path / f"roar_e2e_model_{datetime.now()}")
-
+    logging_callback = EveryNTimesteps(n_steps=10, callback=LoggingCallback(model=model))
+    checkpoint_callback = CheckpointCallback(save_freq=5000, verbose=2, save_path=(model_dir_path/"logs").as_posix())
+    # event_callback = EveryNTimesteps(n_steps=1000, callback=checkpoint_callback)
+    callbacks = CallbackList([checkpoint_callback, logging_callback])
+    model = model.learn(total_timesteps=int(5e4), callback=callbacks, reset_num_timesteps=False)
+    # final model
+    model.save(model_dir_path / f"roar_e2e_model_{datetime.now()}")
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
