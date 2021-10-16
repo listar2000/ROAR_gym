@@ -40,7 +40,6 @@ class ROARPIDEnv(ROAREnv):
                               lat_kp, lat_kd, lat_ki]
 
         Returns:
-
         """
         assert type(action) == list or type(action) == np.ndarray, f"Action is of type {type(action)}"
         assert len(action) == 7, f"Action of shape {np.shape(action)} is not correct"

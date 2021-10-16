@@ -11,20 +11,20 @@ from pathlib import Path
 
 sys.path.append(Path(os.getcwd()).parent.as_posix())
 import gym
-import ROAR_Gym
 from ROAR_Sim.configurations.configuration import Configuration as CarlaConfig
 from ROAR.configurations.configuration import Configuration as AgentConfig
 from ROAR.agent_module.agent import Agent
 from ROAR.agent_module.rl_pid_agent import RLPIDAgent
-from stable_baselines.ddpg.policies import LnMlpPolicy
-from stable_baselines import DDPG
+from stable_baselines3.ddpg.policies import MlpPolicy
+from stable_baselines3 import DDPG
 from datetime import datetime
-from stable_baselines.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList
+from stable_baselines3.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList
 
-try:
-    from ROAR_Gym.envs.roar_env import LoggingCallback
-except:
-    from ROAR_Gym.ROAR_Gym.envs.roar_env import LoggingCallback
+from ROAR_Gym.envs.roar_env import LoggingCallback
+# try:
+#     from ROAR_Gym.envs.roar_env import LoggingCallback
+# except:
+#     from ROAR_Gym.ROAR_Gym.envs.roar_env import LoggingCallback
 
 
 def main():
@@ -43,15 +43,15 @@ def main():
 
     model_params: dict = {
         "verbose": 1,
-        "render": True,
+        #"render": True,
         "tensorboard_log": "./output/tensorboard/pid/"
     }
     latest_model_path = find_latest_model(Path(os.getcwd()))
     if latest_model_path is None:
-        model = DDPG(LnMlpPolicy, env=env, **model_params)  # full tensorboard log can take up space quickly
+        model = DDPG(MlpPolicy, env=env, **model_params)  # full tensorboard log can take up space quickly
     else:
         model = DDPG.load(latest_model_path, env=env, **model_params)
-        model.render = True
+        #model.render = True
         model.tensorboard_log = "./output/tensorboard/pid/"
 
     logging_callback = LoggingCallback(model=model)
@@ -83,4 +83,3 @@ if __name__ == '__main__':
     logging.getLogger("Controller").setLevel(logging.ERROR)
     logging.getLogger("SimplePathFollowingLocalPlanner").setLevel(logging.ERROR)
     main()
-
