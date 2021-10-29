@@ -13,18 +13,13 @@ import gym
 import math
 from collections import OrderedDict
 
-from Discrete_PID.valid_pid_action import VALID_ACTIONS
-
 class ROARPIDEnv(ROAREnv):
     def __init__(self, params):
         super().__init__(params)
         # action_space = speed, long_k, lat_k
 
-        #self.action_space = gym.spaces.Box(low=np.array([0, 0, 0, 0, 0, 0, 0]),
-        #                                  high=np.array([200, 1, 1, 1, 1, 1, 1]), dtype=np.float32)
-
-        self.action_space = gym.spaces.Discrete(len(VALID_ACTIONS))
-
+        self.action_space = gym.spaces.Box(low=np.array([0, 0, 0, 0, 0, 0, 0]),
+                                           high=np.array([200, 1, 1, 1, 1, 1, 1]), dtype=np.float32)
         # observation_space = curr_speed, curr_transform, next_waypoint
         self.observation_space = gym.spaces.Box(low=np.array([-200,
                                                               -1000, -1000, -1000, -360, -360, -360,
@@ -36,19 +31,17 @@ class ROARPIDEnv(ROAREnv):
                                                 dtype=np.float32)
         self._prev_speed = 0
 
-    def step(self, action_num: int) -> Tuple[np.ndarray, float, bool, dict]:
+    def step(self, action: List[float]) -> Tuple[np.ndarray, float, bool, dict]:
         """
 
         Args:
-            action_num: the index of action, which will give us  array of [target_speed,
-                                                                          long_kp, long_kd, long_ki,
-                                                                          lat_kp, lat_kd, lat_ki]
+            action: array of [target_speed,
+                              long_kp, long_kd, long_ki,
+                              lat_kp, lat_kd, lat_ki]
 
         Returns:
 
         """
-
-        action = VALID_ACTIONS[action_num]
         assert type(action) == list or type(action) == np.ndarray, f"Action is of type {type(action)}"
         assert len(action) == 7, f"Action of shape {np.shape(action)} is not correct"
         self._prev_speed = Vehicle.get_speed(self.agent.vehicle)
