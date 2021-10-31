@@ -62,27 +62,33 @@ class LongPIDController(Controller):
         self._dt = dt
 
     def run_in_series(self, next_waypoint: Transform, **kwargs) -> float:
-        target_speed = min(self.max_speed, kwargs.get("target_speed", self.max_speed))
-        current_speed = Vehicle.get_speed(self.agent.vehicle)
+        roll = self.agent.vehicle.transform.rotation.roll
+        out = np.exp(-0.07 * np.abs(roll))
+        output = float(np.clip(out, self.throttle_boundary[0], self.throttle_boundary[1]))
+        return output
+        #target_speed = min(self.max_speed, kwargs.get("target_speed", self.max_speed))
+        #current_speed = Vehicle.get_speed(self.agent.vehicle)
 
-        k_p, k_d, k_i = PIDController.find_k_values(vehicle=self.agent.vehicle, config=self.config)
-        error = target_speed - current_speed
+        #k_p, k_d, k_i = PIDController.find_k_values(vehicle=self.agent.vehicle, config=self.config)
+        #error = target_speed - current_speed
 
-        self._error_buffer.append(error)
+        #self._error_buffer.append(error)
 
-        if len(self._error_buffer) >= 2:
+        #if len(self._error_buffer) >= 2:
             # print(self._error_buffer[-1], self._error_buffer[-2])
-            _de = (self._error_buffer[-2] - self._error_buffer[-1]) / self._dt
-            _ie = sum(self._error_buffer) * self._dt
-        else:
-            _de = 0.0
-            _ie = 0.0
-        output = float(np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.throttle_boundary[0],
-                               self.throttle_boundary[1]))
+            #_de = (self._error_buffer[-2] - self._error_buffer[-1]) / self._dt
+            #_ie = sum(self._error_buffer) * self._dt
+        #else:
+            #_de = 0.0
+            #_ie = 0.0
+        #output = float(np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.throttle_boundary[0],
+                               #self.throttle_boundary[1]))
         # self.logger.debug(f"curr_speed: {round(current_speed, 2)} | kp: {round(k_p, 2)} | kd: {k_d} | ki = {k_i} | "
         #       f"err = {round(error, 2)} | de = {round(_de, 2)} | ie = {round(_ie, 2)}")
               # f"self._error_buffer[-1] {self._error_buffer[-1]} | self._error_buffer[-2] = {self._error_buffer[-2]}")
-        return output
+        #return output
+        
+       
 
 
 class LatPIDController(Controller):

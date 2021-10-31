@@ -18,6 +18,7 @@ from ROAR.agent_module.agent import Agent
 
 #from ROAR.agent_module.rl_pid_agent import RLPIDAgent
 from Discrete_PID.discrete_rl_pid_agent import RLPIDAgent
+from Discrete_PID.valid_pid_action import init_actions_space
 from stable_baselines3.dqn.policies import MlpPolicy
 from stable_baselines3 import DQN
 
@@ -41,6 +42,8 @@ def main():
         "carla_config": carla_config,
         "ego_agent_class": RLPIDAgent
     }
+
+    init_actions_space()
 
     env = gym.make('roar-pid-v0', params=params)
     env.reset()
