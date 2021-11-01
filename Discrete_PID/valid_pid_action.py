@@ -29,9 +29,14 @@ def init_actions_space():
                 VALID_ACTIONS[n] = [p, i, d]
                 n += 1
                 d += dd
+            d = d_s
             i += di
+        i = i_s
         p += dp
 
+
+    print(n, n, n, n, n)
+    return n
 
 
 

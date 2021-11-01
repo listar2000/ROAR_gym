@@ -43,7 +43,9 @@ def main():
         "ego_agent_class": RLPIDAgent
     }
 
-    init_actions_space()
+    A = init_actions_space()
+
+    print(A)
 
     env = gym.make('roar-pid-v0', params=params)
     env.reset()
@@ -65,7 +67,7 @@ def main():
     checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path='./output/logs')
     event_callback = EveryNTimesteps(n_steps=100, callback=checkpoint_callback)
     callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
-    model = model.learn(total_timesteps=int(1e5), callback=callbacks, reset_num_timesteps=False)
+    model = model.learn(total_timesteps=int(1000), callback=callbacks, reset_num_timesteps=False)
     model.save(f"pid_dqn_{datetime.now()}")
 
 

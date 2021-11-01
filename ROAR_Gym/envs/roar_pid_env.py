@@ -82,6 +82,9 @@ class ROARPIDEnv(ROAREnv):
         #target_speed = self.agent.kwargs["target_speed"]
         current_speed = Vehicle.get_speed(self.agent.vehicle)
 
+        # penalize for staying
+        reward -= 10
+
         if self.carla_runner.get_num_collision() > self.max_collision_allowed:
             reward += -1000000
         else:
@@ -97,9 +100,9 @@ class ROARPIDEnv(ROAREnv):
             # prevent it from over steering
             reward -= 50
 
-        if current_speed < 50:
+        if current_speed < 35:
             # i can definitely go through all the track above 50 km/h
-            reward -= 1000
+            reward -= 10
         elif current_speed > self._prev_speed:
             reward += 10
         return reward
