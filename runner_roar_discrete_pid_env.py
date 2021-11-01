@@ -67,8 +67,10 @@ def main():
     checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path='./output/logs')
     event_callback = EveryNTimesteps(n_steps=100, callback=checkpoint_callback)
     callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
-    model = model.learn(total_timesteps=int(10000), callback=callbacks, reset_num_timesteps=False)
-    model.save(f"pid_dqn_{datetime.now()}")
+    model = model.learn(total_timesteps=int(1e8), callback=callbacks, reset_num_timesteps=False)
+    #path = f"output/pid_dqn_{datetime.now()}"
+    path = "output/pid_dqn_model"
+    model.save(path)
 
 
 def find_latest_model(root_path: Path) -> Optional[Path]:
