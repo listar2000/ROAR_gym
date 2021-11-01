@@ -38,7 +38,7 @@ def main():
         "ego_agent_class": RLPIDAgent
     }
 
-    env = gym.make('roar-pid-v0', params=params)
+    env = gym.make('roar-pid-v1', params=params)
     env.reset()
 
     model_params: dict = {

@@ -63,6 +63,7 @@ class ROARPIDEnv(ROAREnv):
         self.agent.kwargs["lat_k_p"] = lat_k_p
         self.agent.kwargs["lat_k_d"] = lat_k_d
         self.agent.kwargs["lat_k_i"] = lat_k_i
+        self.render()
 
         agent, reward, is_done, other_info = super(ROARPIDEnv, self).step(action=action)
         obs = self._get_obs()

@@ -13,7 +13,7 @@ import gym
 import math
 from collections import OrderedDict
 
-class ROARPIDEnv(ROAREnv):
+class ROARPIDEnvOld(ROAREnv):
     def __init__(self, params):
         super().__init__(params)
         # action_space = speed, long_k, lat_k
@@ -57,7 +57,9 @@ class ROARPIDEnv(ROAREnv):
         self.agent.kwargs["lat_k_d"] = lat_k_d
         self.agent.kwargs["lat_k_i"] = lat_k_i
 
-        agent, reward, is_done, other_info = super(ROARPIDEnv, self).step(action=action)
+        self.render()
+
+        agent, reward, is_done, other_info = super(ROARPIDEnvOld, self).step(action=action)
         obs = self._get_obs()
         return obs, reward, is_done, other_info
 
@@ -116,5 +118,5 @@ class ROARPIDEnv(ROAREnv):
         return info_dict
 
     def reset(self) -> Any:
-        super(ROARPIDEnv, self).reset()
+        super(ROARPIDEnvOld, self).reset()
         return self._get_obs()

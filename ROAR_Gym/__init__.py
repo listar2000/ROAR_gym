@@ -14,3 +14,8 @@ register(
     id='roar-e2e-v0',
     entry_point='ROAR_Gym.envs:ROAREnvE2E',
 )
+
+register(
+    id='roar-pid-v1',
+    entry_point='ROAR_Gym.envs:ROARPIDEnvOld',
+)
