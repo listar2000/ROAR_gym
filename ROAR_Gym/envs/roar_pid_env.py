@@ -13,7 +13,7 @@ import gym
 import math
 from collections import OrderedDict
 
-from Discrete_PID.valid_pid_action import VALID_ACTIONS
+from Discrete_PID.valid_pid_action import VALID_ACTIONS, MAX_SPEED, TARGET_SPEED
 
 class ROARPIDEnv(ROAREnv):
     def __init__(self, params):
@@ -35,6 +35,7 @@ class ROARPIDEnv(ROAREnv):
                                                                1000, 1000, 1000, 360, 360, 360]),
                                                 dtype=np.float32)
         self._prev_speed = 0
+        self.target_loc = None
 
     def step(self, action_num: int) -> Tuple[np.ndarray, float, bool, dict]:
         """
@@ -78,34 +79,45 @@ class ROARPIDEnv(ROAREnv):
             next_waypoint_transform = curr_transform
         return np.append(np.append(curr_speed, curr_transform), next_waypoint_transform)
 
-    def get_reward(self) -> float:
+    def get_reward(self, next_waypt = (0,0)) -> float:
         reward: float = 0.0
         #target_speed = self.agent.kwargs["target_speed"]
         current_speed = Vehicle.get_speed(self.agent.vehicle)
+        current_steering = self.agent.vehicle.control.steering
 
-        # penalize for staying
+        # penalize:
+
+        # 1. penalize for staying in the map
         reward -= 10
 
+        # 2. big penalize for collision
         if self.carla_runner.get_num_collision() > self.max_collision_allowed:
             reward += -1000000
-        else:
-            # made a right step without collision
-            reward = 10.0  # base reward for making a successful step
+            
+        # 3. reward fast, penalize slow
+        reward += (current_speed - TARGET_SPEED)
+        
+        # 4. reward speeding up, penalize slowing down
+        if current_speed > self._prev_speed:
+            reward += 50
+        elif current_steering <= 0.2:
+            # slowing down while driving straight
+            reward -= 50
+
+        # 5. penalize steering:
+        if abs(self.agent.vehicle.control.steering) > 0.2:
+            # prevent it from over steering
+            reward -= 100
 
         # if the agent is able to complete a lap, reward heavy
         if self.agent.is_done:
             reward += 1000000
+        
+        current_loc = self.agent.vehicle.transform.location.to_array()
+        
+        #reward += cirle_wp_reward(current_loc, self.target_loc)
+        #reward += wayline_reward(current_loc, self.target_loc)
 
-        # if the agent tries to turn too much, penalize
-        if abs(self.agent.vehicle.control.steering) > 0.3:
-            # prevent it from over steering
-            reward -= 50
-
-        if current_speed < 35:
-            # i can definitely go through all the track above 50 km/h
-            reward -= 10
-        elif current_speed > self._prev_speed:
-            reward += 10
         return reward
 
     def _get_info(self) -> dict:
@@ -129,3 +141,9 @@ class ROARPIDEnv(ROAREnv):
     def reset(self) -> Any:
         super(ROARPIDEnv, self).reset()
         return self._get_obs()
+
+    def circle_wy_reward(cur_loc, next_wy_loc, thre = 0.5):
+        return 0
+
+    def wayline_reward(cur_loc, next_my_loc, thre = 0.5):
+        return 0

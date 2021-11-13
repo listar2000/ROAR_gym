@@ -3,9 +3,15 @@ from pathlib import Path
 
 #from ROAR.control_module.pid_controller import PIDController
 from Discrete_PID.discrete_rl_pid_controller import PIDController
+#from Discrete_PID.wayline_planner import WayLinePlanner
+
 
 from ROAR.planning_module.local_planner.simple_waypoint_following_local_planner import \
     SimpleWaypointFollowingLocalPlanner
+from ROAR.planning_module.local_planner.smooth_waypoint_following_local_planner import \
+    SmoothWaypointFollowingLocalPlanner
+
+
 from ROAR.planning_module.behavior_planner.behavior_planner import BehaviorPlanner
 from ROAR.planning_module.mission_planner.waypoint_following_mission_planner import WaypointFollowingMissionPlanner
 from ROAR.utilities_module.data_structures_models import SensorsData
@@ -24,12 +30,15 @@ class RLPIDAgent(Agent):
         # initiated right after mission plan
 
         self.behavior_planner = BehaviorPlanner(agent=self)
+        
+        
         self.local_planner = SimpleWaypointFollowingLocalPlanner(
             agent=self,
             controller=self.pid_controller,
             mission_planner=self.mission_planner,
             behavior_planner=self.behavior_planner,
             closeness_threshold=1)
+
         self.logger.debug(
             f"Waypoint Following Agent Initiated. Reading f"
             f"rom {self.route_file_path.as_posix()}")

@@ -12,6 +12,8 @@ from typing import Tuple
 import json
 from pathlib import Path
 
+from Discrete_PID.valid_pid_action import VALID_ACTIONS, MAX_SPEED, TARGET_SPEED
+
 
 class PIDController(Controller):
     def __init__(self, agent, steering_boundary: Tuple[float, float],
@@ -62,6 +64,10 @@ class LongPIDController(Controller):
         self._dt = dt
 
     def run_in_series(self, next_waypoint: Transform, **kwargs) -> float:
+        current_speed = Vehicle.get_speed(self.agent.vehicle)
+        if current_speed >= MAX_SPEED:
+            return self.throttle_boundary[0]
+
         roll = self.agent.vehicle.transform.rotation.roll
         out = np.exp(-0.07 * np.abs(roll))
         output = float(np.clip(out, self.throttle_boundary[0], self.throttle_boundary[1]))
