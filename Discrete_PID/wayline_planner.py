@@ -45,6 +45,11 @@ class WayLinePlanner(LocalPlanner):
         self.closeness_threshold_config = json.load(Path(
             agent.agent_settings.simple_waypoint_local_planner_config_file_path).open(mode='r'))
 
+        
+        self.wayline_queue = deque()
+
+
+
     def set_mission_plan(self) -> None:
         """
         Clears current waypoints, and reset mission plan from start
@@ -55,10 +60,13 @@ class WayLinePlanner(LocalPlanner):
             None
         """
         self.way_points_queue.clear()
+        self.wayline_queue.clear()
         while (
                 self.mission_planner.mission_plan
         ):  # this actually clears the mission plan!!
             self.way_points_queue.append(self.mission_planner.mission_plan.popleft())
+            self.wayline_queue.append(self.mission_planner.mission_plan.popleft())
+
 
     def is_done(self) -> bool:
         """
@@ -69,6 +77,7 @@ class WayLinePlanner(LocalPlanner):
             True if Done, False otherwise
         """
         return len(self.way_points_queue) == 0
+        return len(self.wayline_queue) == 0
 
     def run_in_series(self) -> VehicleControl:
         """

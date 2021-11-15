@@ -14,6 +14,8 @@ import math
 from collections import OrderedDict
 
 from Discrete_PID.valid_pid_action import VALID_ACTIONS, MAX_SPEED, TARGET_SPEED
+from Discrete_PID.wayline import WayLine
+from scipy.spatial import distance
 
 class ROARPIDEnv(ROAREnv):
     def __init__(self, params):
@@ -36,6 +38,7 @@ class ROARPIDEnv(ROAREnv):
                                                 dtype=np.float32)
         self._prev_speed = 0
         self.target_loc = None
+        self.collisions = 0
 
     def step(self, action_num: int) -> Tuple[np.ndarray, float, bool, dict]:
         """
@@ -85,39 +88,44 @@ class ROARPIDEnv(ROAREnv):
         current_speed = Vehicle.get_speed(self.agent.vehicle)
         current_steering = self.agent.vehicle.control.steering
 
-        # penalize:
-
         # 1. penalize for staying in the map
         reward -= 10
 
         # 2. big penalize for collision
+        if self.carla_runner.get_num_collision() > self.collisions:
+            reward += -10000
+            self.collisions = self.carla_runner.get_num_collision()
         if self.carla_runner.get_num_collision() > self.max_collision_allowed:
-            reward += -1000000
+            reward += -10000000
             
         # 3. reward fast, penalize slow
-        reward += (current_speed - TARGET_SPEED)
-        
+        # option 1: 
+        # reward += (current_speed - TARGET_SPEED)
+        # option 2:
+        if current_speed < TARGET_SPEED:
+            reward -= 20
+
         # 4. reward speeding up, penalize slowing down
         if current_speed > self._prev_speed:
-            reward += 50
-        elif current_steering <= 0.2:
+            reward += 30
+        elif current_steering <= 0.1:
             # slowing down while driving straight
-            reward -= 50
+            reward -= 30
 
         # 5. penalize steering:
-        if abs(self.agent.vehicle.control.steering) > 0.2:
+        if abs(self.agent.vehicle.control.steering) > 0.25:
             # prevent it from over steering
-            reward -= 100
-
+            reward -= 50
+        current_transform = self.agent.vehicle.transform #.location.to_array()
+        
+        # 6. reward by wayline / circle
+        reward += self.circle_wp_reward(current_transform ,self.agent.local_planner.target_wp)
+        # reward += self.wayline_reward()
+        
         # if the agent is able to complete a lap, reward heavy
         if self.agent.is_done:
             reward += 1000000
         
-        current_loc = self.agent.vehicle.transform.location.to_array()
-        
-        #reward += cirle_wp_reward(current_loc, self.target_loc)
-        #reward += wayline_reward(current_loc, self.target_loc)
-
         return reward
 
     def _get_info(self) -> dict:
@@ -142,8 +150,42 @@ class ROARPIDEnv(ROAREnv):
         super(ROARPIDEnv, self).reset()
         return self._get_obs()
 
-    def circle_wy_reward(cur_loc, next_wy_loc, thre = 0.5):
-        return 0
+    def circle_wp_reward(self, cur_wp, next_wp, thre = 0.5):
+        reaching_reward = 0
+        if disc_pt_to_pt(cur_wp, next_wp) <= thre:
+            reaching_reward += 300
+        if np.abs(cur_wp.rotation.roll - next_wp.rotation.roll) <= thre:
+            reaching_reward += 100
+        return reaching_reward
 
-    def wayline_reward(cur_loc, next_my_loc, thre = 0.5):
-        return 0
+    def wayline_reward(self, cur_transform, target_wayline, target_waypoint,thre = 0.5):
+        """
+        Args:
+            cur_loc : Transform : current vehicle location
+            next_wl: WayLine
+        """
+        reaching_reward = 0
+
+        if disc_pt_to_line(cur_transform, target_wayline) <= thre : 
+            reaching_reward += 500
+
+        if disc_pt_to_pt(cur_transform, target_waypoint) <= thre:
+            reaching_reward += 300
+
+        if np.abs(cur_transform.rotation.roll - target_waypoint.rotation.roll) <= thre:
+            reaching_reward += 100
+
+        return reching_reward
+
+
+def disc_pt_to_line(wp, wl):
+ 
+    return np.abs(wl.eq(wp.location.x, wp.location.z)) / np.power(wl.intercept**2 + wl.self.slope**2 , 1/2) 
+
+
+def disc_pt_to_pt(pt1, pt2):
+    return distance.euclidean(
+            pt1.location.to_tuple(),
+            pt2.location.to_tuple(),
+        )
+    

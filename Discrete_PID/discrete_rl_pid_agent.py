@@ -29,6 +29,8 @@ class RLPIDAgent(Agent):
         self.mission_planner = WaypointFollowingMissionPlanner(agent=self)
         # initiated right after mission plan
 
+
+
         self.behavior_planner = BehaviorPlanner(agent=self)
         
         
@@ -37,7 +39,7 @@ class RLPIDAgent(Agent):
             controller=self.pid_controller,
             mission_planner=self.mission_planner,
             behavior_planner=self.behavior_planner,
-            closeness_threshold=1)
+            closeness_threshold=1.5)
 
         self.logger.debug(
             f"Waypoint Following Agent Initiated. Reading f"
