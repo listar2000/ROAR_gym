@@ -16,6 +16,7 @@ from collections import OrderedDict
 from Discrete_PID.valid_pid_action import VALID_ACTIONS, MAX_SPEED, TARGET_SPEED
 from Discrete_PID.wayline import WayLine
 from scipy.spatial import distance
+from scipy.stats import beta
 
 class ROARPIDEnv(ROAREnv):
     def __init__(self, params):
@@ -108,14 +109,20 @@ class ROARPIDEnv(ROAREnv):
         # 4. reward speeding up, penalize slowing down
         if current_speed > self._prev_speed:
             reward += 30
-        elif current_steering <= 0.1:
+        elif current_speed <= self._prev_speed and current_steering <= 0.1:
             # slowing down while driving straight
             reward -= 30
 
         # 5. penalize steering:
-        if abs(self.agent.vehicle.control.steering) > 0.25:
+        if abs(self.agent.vehicle.control.steering) >= 0.25:
             # prevent it from over steering
             reward -= 50
+        elif abs(self.agent.vehicle.control.steering) >= 0.4:
+            reward -= 120
+        elif abs(self.agent.vehicle.control.steering) >= 0.6:
+            reward -= 400
+
+
         current_transform = self.agent.vehicle.transform #.location.to_array()
         
         # 6. reward by wayline / circle
@@ -166,6 +173,15 @@ class ROARPIDEnv(ROAREnv):
         """
         reaching_reward = 0
 
+        assert target_wayline.has_crossed(target_waypoint), "optimal waypoint should lie on the wayline"
+
+        if target_wayline.has_crossed(cur_transform):
+           cur_to_left = disc_pt_to_pt(cur_transform, target_wayline.left)
+           tar_to_left = disc_pt_to_pt(target_transform, target_wayline.right)
+
+
+
+
         if disc_pt_to_line(cur_transform, target_wayline) <= thre : 
             reaching_reward += 500
 
@@ -179,7 +195,6 @@ class ROARPIDEnv(ROAREnv):
 
 
 def disc_pt_to_line(wp, wl):
- 
     return np.abs(wl.eq(wp.location.x, wp.location.z)) / np.power(wl.intercept**2 + wl.self.slope**2 , 1/2) 
 
 

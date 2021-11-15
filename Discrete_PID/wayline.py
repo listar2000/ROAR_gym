@@ -8,6 +8,8 @@ import numpy as np
 
 class WayLine(object):
     def __init__(self, transform1: Transform, transform2: Transform) -> None:
+        self.left = transform1
+        self.right = transform2
         self.x1, self.z1 = transform1.location.x, transform1.location.z
         self.x2, self.z2 = transform2.location.x, transform2.location.z
         self.pos_true = True
