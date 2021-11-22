@@ -145,9 +145,6 @@ class ROARPIDEnv(ROAREnv):
         info_dict["throttle"] = self.agent.vehicle.control.throttle
         info_dict["steering"] = self.agent.vehicle.control.steering
 
-        #info_dict["long_kp"] = self.agent.kwargs["long_k_p"]
-        #info_dict["long_kd"] = self.agent.kwargs["long_k_d"]
-        #info_dict["long_ki"] = self.agent.kwargs["long_k_i"]
         info_dict["lat_kp"] = self.agent.kwargs["lat_k_p"]
         info_dict["lat_kd"] = self.agent.kwargs["lat_k_d"]
         info_dict["lat_ki"] = self.agent.kwargs["lat_k_i"]
@@ -175,32 +172,30 @@ class ROARPIDEnv(ROAREnv):
 
         assert target_wayline.has_crossed(target_waypoint), "optimal waypoint should lie on the wayline"
 
-        if target_wayline.has_crossed(cur_transform):
-           cur_to_left = disc_pt_to_pt(cur_transform, target_wayline.left)
-           tar_to_left = disc_pt_to_pt(target_transform, target_wayline.right)
+        fra_to_left = disc_pt_to_pt(cur_transform, target_wayline.left) / disc_pt_to_pt(target_wayline.left, target_wayline.right)
+        fra_optimal = disc_pt_to_pt(target_waypoint, target_wayline.left) / disc_pt_to_pt(target_wayline.left, target_wayline.right)
 
+        if not target_wayline.has_crossed(cur_transform):
+            reaching_reward += 0
+        else:
+            reaching_reward += (1 - np.abs(fra_optimal - fra_to_left)) * 1000 
 
+        #if disc_pt_to_line(cur_transform, target_wayline) <= thre : 
+            #reaching_reward += 500
 
+        #if disc_pt_to_pt(cur_transform, target_waypoint) <= thre:
+            #reaching_reward += 300
 
-        if disc_pt_to_line(cur_transform, target_wayline) <= thre : 
-            reaching_reward += 500
-
-        if disc_pt_to_pt(cur_transform, target_waypoint) <= thre:
-            reaching_reward += 300
-
-        if np.abs(cur_transform.rotation.roll - target_waypoint.rotation.roll) <= thre:
-            reaching_reward += 100
+        #if np.abs(cur_transform.rotation.roll - target_waypoint.rotation.roll) <= thre:
+            #reaching_reward += 100
 
         return reching_reward
 
-
 def disc_pt_to_line(wp, wl):
     return np.abs(wl.eq(wp.location.x, wp.location.z)) / np.power(wl.intercept**2 + wl.self.slope**2 , 1/2) 
-
 
 def disc_pt_to_pt(pt1, pt2):
     return distance.euclidean(
             pt1.location.to_tuple(),
             pt2.location.to_tuple(),
-        )
-    
+        ) 

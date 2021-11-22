@@ -15,9 +15,9 @@ def init_actions_space():
     d_s = 0
     d_e = 1
     
-    dp = 0.1
-    di = 0.1
-    dd = 0.1
+    dp = 0.2
+    di = 0.2
+    dd = 0.2
 
     p = p_s
     i = i_s

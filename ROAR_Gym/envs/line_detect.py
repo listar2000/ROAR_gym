@@ -101,8 +101,13 @@ class LineDetectAgent(Agent):
         # the part about visualization
         self.occupancy_map = OccupancyGridMap(agent=self, threaded=True)
 
-        occ_file_path = Path("../ROAR_Sim/data/easy_map_cleaned_global_occu_map.npy")
+        occ_file_path = Path("../ROAR_Sim/data/easy_map_global.npy")
         self.occupancy_map.load_from_file(occ_file_path)
+
+        print(self.occupancy_map)
+        self.occupancy_map.visualize()
+        exit()
+
 
     def _get_next_bbox(self):
         # make sure no index out of bound error
