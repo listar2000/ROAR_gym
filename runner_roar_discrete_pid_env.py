@@ -72,16 +72,16 @@ def main():
     if latest_model_path is None:
         model = DQN(MlpPolicy, env=env, **model_params)  # full tensorboard log can take up space quickly
     else:
-        print(11111, latest_model_path)
+        # print(11111, latest_model_path)
         model = DQN.load(latest_model_path, env = env, print_system_info=True, **model_params)
-        #model.get_env().reset()
+        # model.get_env().reset()
         model.tensorboard_log = "./output/tensorboard/discrete_pid/"
 
 
     logging_callback = LoggingCallback(model=model)
     checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path='./output/discrete_pid_logs')
-    event_callback = EveryNTimesteps(n_steps=100, callback=checkpoint_callback)
-    callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
+    event_callback = EveryNTimesteps(n_steps=1000, callback=logging_callback)
+    callbacks = CallbackList([checkpoint_callback, event_callback])
     tot_t = int(1e6)
     model = model.learn(total_timesteps=tot_t, callback=callbacks, reset_num_timesteps=False)
     #path = f"output/pid_dqn_{datetime.now()}"
@@ -110,7 +110,7 @@ def find_latest_model(root_path: Path) -> Optional[Path]:
     }
     
     if paths_dict is None:
-        return none
+        return None
 
     latest_model_file_path: Optional[Path] = paths_dict.get(max(paths_dict.keys()), None)
     return latest_model_file_path
