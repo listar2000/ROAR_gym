@@ -46,46 +46,17 @@ def main():
     A = init_actions_space()
 
     env = gym.make('roar-pid-v0', params=params)
-    env.reset()
-
-    model_params = dict(
-        verbose= 1,
-        #"render": True,
-        tensorboard_log =  "./output/tensorboard/discrete_pid/",
-        # more arguments here 
-        learning_rate = 0.001,
-        buffer_size=5000,
-        batch_size=64,
-        learning_starts=10000,
-        gamma=0.95,
-        #train_freq=(4, "step"),
-        gradient_steps=1,
-        target_update_interval=1000,
-        exploration_initial_eps=1,
-        exploration_final_eps=0.1,
-        exploration_fraction=0.2
-    )
 
     latest_model_path = find_latest_model(Path(os.getcwd()))
-    if latest_model_path is None:
-        model = DQN(MlpPolicy, env=env, **model_params)  # full tensorboard log can take up space quickly
-    else:
-        model = DQN.load(latest_model_path, env = env, print_system_info=True)
-        #model.get_env().reset()
-        model.tensorboard_log = "./output/tensorboard/discrete_pid/"
+    model = DQN.load(latest_model_path, env = env, print_system_info=True)   
+    model.tensorboard_log = "./predict"
 
-
-    logging_callback = LoggingCallback(model=model)
-    checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path='./output/discrete_pid_logs')
-    event_callback = EveryNTimesteps(n_steps=100, callback=checkpoint_callback)
-    callbacks = CallbackList([checkpoint_callback, event_callback, logging_callback])
-    tot_t = int(1e6)
-    model = model.learn(total_timesteps=tot_t, callback=callbacks, reset_num_timesteps=False)
-    #path = f"output/pid_dqn_{datetime.now()}"
-    #path = "output/pid_dqn_model" + datetime.now().isoformat(timespec='minutes') 
-    path = "output/discrete_pid_logs/rl_model_" + str(tot_t + 1) + "_step"
-    model.save(path)
-
+    obs = env.reset()
+    for i in range(100000):
+        print(i)
+        action, _states = model.predict(obs)
+        print("act: ", action)
+        obs, rewards, dones, info = env.step(action)
 
 def find_latest_model(root_path: Path) -> Optional[Path]:
     import os
@@ -113,4 +84,5 @@ if __name__ == '__main__':
     logging.getLogger("Controller").setLevel(logging.ERROR)
     logging.getLogger("SimplePathFollowingLocalPlanner").setLevel(logging.ERROR)
     main()
+
 

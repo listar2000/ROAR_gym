@@ -52,19 +52,9 @@ class ROARPIDEnv(ROAREnv):
         Returns:
 
         """
-
         action = VALID_ACTIONS[action_num]
-        #assert type(action) == list or type(action) == np.ndarray, f"Action is of type {type(action)}"
-        #assert len(action) == 7, f"Action of shape {np.shape(action)} is not correct"
-        self._prev_speed = Vehicle.get_speed(self.agent.vehicle)
-
-        #target_speed = action[0]
-        #long_k_p, long_k_d, long_k_i = action[1], action[2], action[3]
         lat_k_p, lat_k_d, lat_k_i = action[0], action[1], action[2]
-        #self.agent.kwargs["long_k_p"] = long_k_p
-        #self.agent.kwargs["long_k_d"] = long_k_d
-        #self.agent.kwargs["long_k_i"] = long_k_i
-        #self.agent.kwargs["target_speed"] = target_speed
+
         self.agent.kwargs["lat_k_p"] = lat_k_p
         self.agent.kwargs["lat_k_d"] = lat_k_d
         self.agent.kwargs["lat_k_i"] = lat_k_i
