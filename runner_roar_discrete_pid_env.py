@@ -70,14 +70,7 @@ def main():
     if latest_model_path is None:
         model = DQN(MlpPolicy, env=env, **model_params)  # full tensorboard log can take up space quickly
     else:
-<<<<<<< HEAD
-        model = DQN.load(latest_model_path, env = env, print_system_info=True)
-        #model.get_env().reset()
-=======
-        # print(11111, latest_model_path)
         model = DQN.load(latest_model_path, env = env, print_system_info=True, **model_params)
-        # model.get_env().reset()
->>>>>>> 68bff111ff77a33509531acc2bd2f2a86c268d8a
         model.tensorboard_log = "./output/tensorboard/discrete_pid/"
 
 

@@ -48,7 +48,7 @@ def main():
     env = gym.make('roar-pid-v0', params=params)
 
     latest_model_path = find_latest_model(Path(os.getcwd()))
-    model = DQN.load(latest_model_path, env = env, print_system_info=True)   
+    model = DQN.load(latest_model_path, print_system_info=True)   
     model.tensorboard_log = "./predict"
 
     obs = env.reset()
