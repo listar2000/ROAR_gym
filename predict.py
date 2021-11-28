@@ -76,7 +76,7 @@ def find_latest_model(root_path: Path) -> Optional[Path]:
     if paths_dict is None:
         return None
 
-    latest_model_file_path: Optional[Path] = paths_dict.get(max(paths_dict.keys()), None)
+    latest_model_file_path: Optional[Path] = paths_dict.get(min(paths_dict.keys()), None)
     print(latest_model_file_path)
     return latest_model_file_path
 

@@ -88,6 +88,13 @@ class ROARPIDEnv(ROAREnv):
             print("wayline reward: ", cross_rwd)
         # log prev info for next reward computation
         self._prev_speed = Vehicle.get_speed(self.agent.vehicle)
+
+        if self.carla_runner.get_num_collision() > self.collisions:
+            reward += -1000
+            self.collisions = self.carla_runner.get_num_collision()
+        if self.carla_runner.get_num_collision() > self.max_collision_allowed:
+            reward += -10000000
+
         return reward
 
     # def get_reward(self, next_waypt = (0,0)) -> float:
@@ -168,7 +175,7 @@ class ROARPIDEnv(ROAREnv):
             reaching_reward += 100
         return reaching_reward
 
-    def wayline_reward(self, max_reward = 100, clip_near = 0, clip_far = 2.5):
+    def wayline_reward(self, max_reward = 100, clip_near = 0.5, clip_far = 3):
         """
         Args:
             max_reward: maximum reward achievable through passing wayline
