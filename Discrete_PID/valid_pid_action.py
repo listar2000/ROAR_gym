@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 VALID_ACTIONS = {}
 
-MAX_SPEED = 120
+MAX_SPEED = 150
 
 TARGET_SPEED = 80
 
