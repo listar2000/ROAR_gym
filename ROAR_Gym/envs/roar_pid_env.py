@@ -53,7 +53,6 @@ class ROARPIDEnv(ROAREnv):
         Returns:
 
         """
-        print(type(action_num))
         action = VALID_ACTIONS[int(action_num)]
         lat_k_p, lat_k_d, lat_k_i = action[0], action[1], action[2]
 
