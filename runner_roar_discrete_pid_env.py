@@ -45,6 +45,8 @@ def main():
 
     A = init_actions_space()
 
+    print(A)
+
     env = gym.make('roar-pid-v0', params=params)
     env.reset()
 
@@ -70,7 +72,9 @@ def main():
     if latest_model_path is None:
         model = DQN(MlpPolicy, env=env, **model_params)  # full tensorboard log can take up space quickly
     else:
+        # print(11111, latest_model_path)
         model = DQN.load(latest_model_path, env = env, print_system_info=True, **model_params)
+        # model.get_env().reset()
         model.tensorboard_log = "./output/tensorboard/discrete_pid/"
 
 
@@ -94,6 +98,12 @@ def find_latest_model(root_path: Path) -> Optional[Path]:
         print(f"No previous record found in {logs_path}")
         return None
     paths = sorted((root_path / "output" / "discrete_pid_logs").iterdir(), key=os.path.getmtime)
+  
+   
+    #i = 1
+    #for path in paths:
+    #     print(i, path.name.split("_"))
+    #     i += 1
     
     paths_dict: Dict[int, Path] = {
         int(path.name.split("_")[2]): path for path in paths

@@ -52,11 +52,13 @@ def main():
     model.tensorboard_log = "./predict"
 
     obs = env.reset()
-    for i in range(100000):
-        print(i)
+    
+    while True:
         action, _states = model.predict(obs)
         print("act: ", action)
-        obs, rewards, dones, info = env.step(action)
+        obs, rewards, is_done, info = env.step(action)
+        if is_done:
+            break
 
 def find_latest_model(root_path: Path) -> Optional[Path]:
     import os
@@ -72,9 +74,10 @@ def find_latest_model(root_path: Path) -> Optional[Path]:
     }
     
     if paths_dict is None:
-        return none
+        return None
 
     latest_model_file_path: Optional[Path] = paths_dict.get(max(paths_dict.keys()), None)
+    print(latest_model_file_path)
     return latest_model_file_path
 
 

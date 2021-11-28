@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 from ROAR.agent_module.agent import Agent
 from pathlib import Path
 
@@ -13,7 +13,7 @@ from ROAR.planning_module.local_planner.simple_waypoint_following_local_planner 
 
 from ROAR.planning_module.behavior_planner.behavior_planner import BehaviorPlanner
 from ROAR.planning_module.mission_planner.waypoint_following_mission_planner import WaypointFollowingMissionPlanner
-from ROAR.utilities_module.data_structures_models import SensorsData
+from ROAR.utilities_module.data_structures_models import SensorsData, Transform
 from ROAR.utilities_module.vehicle_models import VehicleControl, Vehicle
 from Discrete_PID.wayline import WayLine
 import logging
@@ -30,7 +30,6 @@ class RLPIDAgent(Agent):
         # initiated right after mission plan
 
         self.behavior_planner = BehaviorPlanner(agent=self)
-        
         
         self.local_planner = SimpleWaypointFollowingLocalPlanner(
             agent=self,
@@ -57,14 +56,14 @@ class RLPIDAgent(Agent):
         self.finished = False
         self.has_crossed = False
         self.wayline: Optional[WayLine] = None
+        self.waypoint: Optional[Transform] = None
+        self.hit_loc: Optional[Tuple] = None
         self._get_next_wayline()
 
     def run_step(self, vehicle: Vehicle,
                  sensors_data: SensorsData) -> VehicleControl:
         super(RLPIDAgent, self).run_step(vehicle=vehicle,
                                          sensors_data=sensors_data)
-        self.transform_history.append(self.vehicle.transform)
-
         self.has_crossed, _ = self.wayline_step()
 
         if self.is_done:
@@ -92,9 +91,23 @@ class RLPIDAgent(Agent):
             if crossed:
                 self.int_counter += 1
                 self._get_next_wayline()
+                self._calculate_hit_loc()
 
             return crossed, dist
         return False, 0.0
+
+    # calculate the location hitting on the most recent wayline
+    def _calculate_hit_loc(self):
+        assert len(self.transform_history) > 1, "transform history should have at least 2 entries"
+        
+        w2 = WayLine(self.transform_history[-1], self.transform_history[-2])
+        s1, i1 = self.wayline.slope, self.wayline.intercept
+        s2, i2 = w2.slope, w2.intercept
+
+        x = (i2 - i1) / (s1 - s2)
+        z = s1 * x + i1
+
+        self.hit_loc = (x, z)
 
     def _get_next_wayline(self):
         # make sure no index out of bound error
@@ -116,6 +129,7 @@ class RLPIDAgent(Agent):
                 curr_lb += 1
             else:
                 self.wayline = WayLine(t1, t2)
+                self.waypoint = t2
                 return
         # no next bbox
         print("finished all the iterations!")

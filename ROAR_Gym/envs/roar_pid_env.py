@@ -3,7 +3,9 @@ try:
 except:
     from ROAR_Gym.ROAR_Gym.envs.roar_env import ROAREnv
 
+from math import sqrt
 from numpy.core.numeric import cross
+from ROAR.utilities_module.data_structures_models import Transform
 from ROAR.utilities_module.vehicle_models import VehicleControl
 from ROAR.agent_module.agent import Agent
 from ROAR.utilities_module.vehicle_models import Vehicle
@@ -11,13 +13,10 @@ from typing import Tuple
 import numpy as np
 from typing import List, Any
 import gym
-import math
 from collections import OrderedDict
 
 from Discrete_PID.valid_pid_action import VALID_ACTIONS, MAX_SPEED, TARGET_SPEED
 from Discrete_PID.wayline import WayLine
-from scipy.spatial import distance
-from scipy.stats import beta
 
 class ROARPIDEnv(ROAREnv):
     def __init__(self, params):
@@ -78,16 +77,14 @@ class ROARPIDEnv(ROAREnv):
     def get_reward(self) -> float:
         # prep for reward computation
         reward = -1
-        crossed = self.agent.has_crossed
 
         # reward computation
         # reward += 0.5 * (Vehicle.get_speed(self.agent.vehicle) - self._prev_speed)
         reward += self.agent.vehicle.control.throttle
         # reward += np.clip(self.prev_dist_to_strip - curr_dist_to_strip, -10, 10)
         # reward -= self.carla_runner.get_num_collision()
-        if crossed:
-            print("reward crossed")
-            reward += 100
+
+        reward += self.wayline_reward()
 
         # log prev info for next reward computation
         self._prev_speed = Vehicle.get_speed(self.agent.vehicle)
@@ -171,40 +168,31 @@ class ROARPIDEnv(ROAREnv):
             reaching_reward += 100
         return reaching_reward
 
-    def wayline_reward(self, cur_transform, target_wayline, target_waypoint,thre = 0.5):
+    def wayline_reward(self, max_reward = 100, clip_near = 0.5, clip_far = 5):
         """
         Args:
-            cur_loc : Transform : current vehicle location
-            next_wl: WayLine
+            max_reward: maximum reward achievable through passing wayline
+            clip_near: the threshold (in m) that any distance smaller than it will receive max reward
+            clip_far: the threshold (in m) that any distance larger than it will receive zero reward
         """
-        reaching_reward = 0
+        if not self.agent.has_crossed:
+            return 0
 
-        assert target_wayline.has_crossed(target_waypoint), "optimal waypoint should lie on the wayline"
+        target_waypoint: Transform = self.agent.waypoint
 
-        fra_to_left = disc_pt_to_pt(cur_transform, target_wayline.left) / disc_pt_to_pt(target_wayline.left, target_wayline.right)
-        fra_optimal = disc_pt_to_pt(target_waypoint, target_wayline.left) / disc_pt_to_pt(target_wayline.left, target_wayline.right)
+        x1, z1 = self.agent.hit_loc
+        x2, z2 = target_waypoint.location.x, target_waypoint.location.z
 
-        if not target_wayline.has_crossed(cur_transform):
-            reaching_reward += 0
-        else:
-            reaching_reward += (1 - np.abs(fra_optimal - fra_to_left)) * 1000 
+        dist = disc_pt_to_pt(x1, z1, x2, z2)
 
-        #if disc_pt_to_line(cur_transform, target_wayline) <= thre : 
-            #reaching_reward += 500
+        frac = (dist - clip_near) / (clip_far - clip_near)
+        frac = np.clip(frac, 0, 1)
 
-        #if disc_pt_to_pt(cur_transform, target_waypoint) <= thre:
-            #reaching_reward += 300
+        return frac * max_reward
 
-        #if np.abs(cur_transform.rotation.roll - target_waypoint.rotation.roll) <= thre:
-            #reaching_reward += 100
-
-        return reching_reward
-
+# helper functions for linear reward
 def disc_pt_to_line(wp, wl):
     return np.abs(wl.eq(wp.location.x, wp.location.z)) / np.power(wl.intercept**2 + wl.self.slope**2 , 1/2) 
 
-def disc_pt_to_pt(pt1, pt2):
-    return distance.euclidean(
-            pt1.location.to_tuple(),
-            pt2.location.to_tuple(),
-        ) 
+def disc_pt_to_pt(x1, z1, x2, z2):
+    return sqrt((x1 - x2) ** 2 + (z1 - z2) ** 2)
