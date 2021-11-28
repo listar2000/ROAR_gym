@@ -82,7 +82,7 @@ def main():
     checkpoint_callback = CheckpointCallback(save_freq=1000, verbose=2, save_path='./output/discrete_pid_logs')
     event_callback = EveryNTimesteps(n_steps=1000, callback=logging_callback)
     callbacks = CallbackList([checkpoint_callback, event_callback])
-    tot_t = int(1e4)
+    tot_t = int(1e6)
     model = model.learn(total_timesteps=tot_t, callback=callbacks, reset_num_timesteps=False)
     #path = f"output/pid_dqn_{datetime.now()}"
     #path = "output/pid_dqn_model" + datetime.now().isoformat(timespec='minutes') 
