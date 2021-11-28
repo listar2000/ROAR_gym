@@ -75,7 +75,6 @@ class LineBBox(object):
 
         return self.strip_list
 
-
 """""""""""""""""""""""""""""""""""""""""""""
 You can ignore all the codes above this line
 """""""""""""""""""""""""""""""""""""""""""""
@@ -107,7 +106,6 @@ class LineDetectAgent(Agent):
         print(self.occupancy_map)
         self.occupancy_map.visualize()
         exit()
-
 
     def _get_next_bbox(self):
         # make sure no index out of bound error
