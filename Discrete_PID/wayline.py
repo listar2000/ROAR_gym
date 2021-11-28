@@ -13,7 +13,7 @@ class WayLine(object):
         self.x1, self.z1 = transform1.location.x, transform1.location.z
         self.x2, self.z2 = transform2.location.x, transform2.location.z
         self.pos_true = True
-        self.thres = 1e-2
+        self.thres = 1e-10
         self.eq = self._construct_eq()
         self.strip_list = None
 
@@ -24,28 +24,47 @@ class WayLine(object):
         dz, dx = self.z2 - self.z1, self.x2 - self.x1
 
         if abs(dz) < self.thres:
+            self.pt_slope = 0
+            self.pt_intercept = self.z1
+            self.slope = 1e20
+            if self.x1 > 0:
+                self.intercept = -1e20
+            else:
+                self.intercept = 1e20
             def vertical_eq(x, z):
                 return x - self.x2
             return vertical_eq
         elif abs(dx) < self.thres:
+            self.pt_slope = 1e20
+            if self.x2 > 0:
+                self.pt_intercept = -1e20 
+            else:
+                self.pt_intercept = 1e20
+            self.slope = 0
+            self.intercept = self.z2
             def horizontal_eq(x, z):
                 return z - self.z2
             return horizontal_eq
 
         slope_ = dz / dx
+        self.pt_slope = slope_
+        self.pt_intercept = -(self.pt_slope * self.x2) + self.z2
         self.slope = -1 / slope_
         # print("tilted strip with slope {}".format(self.slope))
         self.intercept = -(self.slope * self.x2) + self.z2
 
         def linear_eq(x, z):
-            return z - self.slope * x - self.intercept
+            num = z - self.slope * x - self.intercept
+            return num
 
         return linear_eq
 
     def has_crossed(self, transform: Transform):
         x, z = transform.location.x, transform.location.z
+        #print((x,z), self.pos_true)
         dist = self.eq(x, z)
-        return (dist > 0 if self.pos_true else dist < 0, dist)
+        #print(dist)
+        return (dist >= 0 if self.pos_true else dist <= 0, dist)
 
     def get_visualize_locs(self, size=10):
         if self.strip_list is not None:

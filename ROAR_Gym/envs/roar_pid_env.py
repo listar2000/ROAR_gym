@@ -84,9 +84,8 @@ class ROARPIDEnv(ROAREnv):
         # reward -= self.carla_runner.get_num_collision()
         cross_rwd = self.wayline_reward()
         reward += cross_rwd
-
-        print("wayline reward: ", cross_rwd)
-        print("total reward: ", reward)
+        if cross_rwd > 0:
+            print("wayline reward: ", cross_rwd)
         # log prev info for next reward computation
         self._prev_speed = Vehicle.get_speed(self.agent.vehicle)
         return reward
@@ -169,7 +168,7 @@ class ROARPIDEnv(ROAREnv):
             reaching_reward += 100
         return reaching_reward
 
-    def wayline_reward(self, max_reward = 100, clip_near = 0.5, clip_far = 5):
+    def wayline_reward(self, max_reward = 100, clip_near = 0, clip_far = 2.5):
         """
         Args:
             max_reward: maximum reward achievable through passing wayline
@@ -179,16 +178,20 @@ class ROARPIDEnv(ROAREnv):
         if not self.agent.has_crossed:
             return 0
 
-        target_waypoint: Transform = self.agent.waypoint
+        print("crossing!")      
+        target_waypoint: Transform = self.agent.prev_wp
 
         x1, z1 = self.agent.hit_loc
         x2, z2 = target_waypoint.location.x, target_waypoint.location.z
-
+        print("reward hit: ", (x1, z1))
+        print("reward taget: ", (x2, z2))
         dist = disc_pt_to_pt(x1, z1, x2, z2)
-
-        frac = (dist - clip_near) / (clip_far - clip_near)
+        
+        print(dist)
+        frac = (clip_far - dist) / (clip_far - clip_near)
         frac = np.clip(frac, 0, 1)
-
+        print(frac)
+        #print(frac * max_reward)
         return frac * max_reward
 
 # helper functions for linear reward
