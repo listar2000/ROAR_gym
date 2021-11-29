@@ -3,9 +3,9 @@ from collections import OrderedDict
 
 VALID_ACTIONS = {}
 
-MAX_SPEED = 120
+MAX_SPEED = 150
 
-TARGET_SPEED = 80
+TARGET_SPEED = 110
 
 def init_actions_space():
     p_s = 0

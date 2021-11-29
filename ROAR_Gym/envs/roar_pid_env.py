@@ -75,25 +75,29 @@ class ROARPIDEnv(ROAREnv):
 
     def get_reward(self) -> float:
         # prep for reward computation
-        reward = -1
+        reward = -15
 
         # reward computation
         # reward += 0.5 * (Vehicle.get_speed(self.agent.vehicle) - self._prev_speed)
         reward += self.agent.vehicle.control.throttle
         # reward += np.clip(self.prev_dist_to_strip - curr_dist_to_strip, -10, 10)
         # reward -= self.carla_runner.get_num_collision()
+        
+        # log prev info for next reward computation
+        self._prev_speed = Vehicle.get_speed(self.agent.vehicle)
+        if self._prev_speed > TARGET_SPEED:
+            reward += 10
+        
         cross_rwd = self.wayline_reward()
         reward += cross_rwd
         if cross_rwd > 0:
             print("wayline reward: ", cross_rwd)
-        # log prev info for next reward computation
-        self._prev_speed = Vehicle.get_speed(self.agent.vehicle)
-
+ 
         if self.carla_runner.get_num_collision() > self.collisions:
-            reward += -1000
+            reward += -100000
             self.collisions = self.carla_runner.get_num_collision()
         if self.carla_runner.get_num_collision() > self.max_collision_allowed:
-            reward += -10000000
+            reward += -100000000
 
         return reward
 
