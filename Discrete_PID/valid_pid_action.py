@@ -5,7 +5,7 @@ VALID_ACTIONS = {}
 
 MAX_SPEED = 150
 
-TARGET_SPEED = 80
+TARGET_SPEED = 100
 
 def init_actions_space():
     p_s = 0
