@@ -4,11 +4,12 @@ from pathlib import Path
 
 #from ROAR.control_module.pid_controller import PIDController
 from Discrete_PID.discrete_rl_pid_controller import PIDController
+from Discrete_PID.waypoint_and_wayline_following_local_planner import SimpleWpAndWlFollowingLocalPlanner
 #from Discrete_PID.wayline_planner import WayLinePlanner
 
 
-from ROAR.planning_module.local_planner.simple_waypoint_following_local_planner import \
-    SimpleWaypointFollowingLocalPlanner
+#from ROAR.planning_module.local_planner.simple_waypoint_following_local_planner import \
+#    SimpleWaypointFollowingLocalPlanner
 
 
 from ROAR.planning_module.behavior_planner.behavior_planner import BehaviorPlanner
@@ -31,7 +32,7 @@ class RLPIDAgent(Agent):
 
         self.behavior_planner = BehaviorPlanner(agent=self)
         
-        self.local_planner = SimpleWaypointFollowingLocalPlanner(
+        self.local_planner = SimpleWpAndWlFollowingLocalPlanner(
             agent=self,
             controller=self.pid_controller,
             mission_planner=self.mission_planner,
@@ -72,7 +73,11 @@ class RLPIDAgent(Agent):
             control = VehicleControl()
             self.logger.debug("Path Following Agent is Done. Idling.")
         else:
-            control = self.local_planner.run_in_series()
+            if len(self.transform_history) >= 2:
+                cur_dir = WayLine(self.transform_history[-1], self.transform_history[-2]).pt_slope
+            else:
+                cur_dir = None
+            control = self.local_planner.run_in_series(self.wayline, cur_dir)
         return control
 
     ## adapted from the e2e agent
@@ -106,7 +111,14 @@ class RLPIDAgent(Agent):
 
     # calculate the location hitting on the most recent wayline
     def _calculate_hit_loc(self):
-        assert len(self.transform_history) > 1, "transform history should have at least 2 entries"
+        #assert len(self.transform_history) > 1, "transform history should have at least 2 entries"
+        if self.transform_history is None or len(self.transform_history) < 2:
+            #if len(self.transform_history) == 1:
+            #    return self.transform_history[0].
+            #else:
+            self.hit_loc = (0,0)
+            return 
+        
         #print("current: ", (self.vehicle.transform.location.x, self.vehicle.transform.location.z))
         s1, i1 = self.wayline.slope, self.wayline.intercept
         #print("self.wayline: ", (self.wayline.x1,self.wayline.z1), (self.wayline.x2, self.wayline.z2))

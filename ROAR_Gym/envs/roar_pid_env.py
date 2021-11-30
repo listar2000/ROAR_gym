@@ -194,11 +194,11 @@ class ROARPIDEnv(ROAREnv):
 
         x1, z1 = self.agent.hit_loc
         x2, z2 = target_waypoint.location.x, target_waypoint.location.z
-        print("reward hit: ", (x1, z1))
-        print("reward taget: ", (x2, z2))
+        #print("reward hit: ", (x1, z1))
+        #print("reward taget: ", (x2, z2))
         dist = disc_pt_to_pt(x1, z1, x2, z2)
         
-        print(dist)
+        #print(dist)
         frac = (clip_far - dist) / (clip_far - clip_near)
         frac = np.clip(frac, 0, 1)
         print(frac)

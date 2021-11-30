@@ -34,9 +34,11 @@ class PIDController(Controller):
         )
         self.logger = logging.getLogger(__name__)
 
-    def run_in_series(self, next_waypoint: Transform, next_wayline = None,  **kwargs) -> VehicleControl:
+    def run_in_series(self, next_waypoint: Transform, next_wayline = None,  current_dir = None, **kwargs) -> VehicleControl:
         throttle = self.long_pid_controller.run_in_series(next_waypoint=next_waypoint,
-                                                          next_wayline = next_wayline)
+                                                          next_wayline = next_wayline, 
+                                                          current_dir = current_dir
+                                                          )
         steering = self.lat_pid_controller.run_in_series(next_waypoint=next_waypoint)
         return VehicleControl(throttle=throttle, steering=steering)
 
@@ -63,18 +65,27 @@ class LongPIDController(Controller):
 
         self._dt = dt
 
-    def run_in_series(self, next_waypoint: Transform, next_wayline,  **kwargs) -> float:
+    def run_in_series(self, next_waypoint: Transform, next_wayline, current_dir, **kwargs) -> float:
         current_speed = Vehicle.get_speed(self.agent.vehicle)
         #if current_speed >= MAX_SPEED:
-            #return self.throttle_boundary[0]
-        if next_wayline is not None:
-             direction_vector = np.array([-np.sin(np.deg2rad(self.agent.vehicle.transform.rotation.yaw)),
-                                     -np.cos(np.deg2rad(self.agent.vehicle.transform.rotation.yaw))])
-             dir_slope = direction_vector[1] / direction_vector[0]
-             if dir_slope * next_wayline.slope_ > -0.8 or dir_slope * next_wayline.slope_ < -1.2 :
-                 return self.throttle_boundary[0]
+        #    return self.throttle_boundary[0]
+        if next_wayline is not None and current_dir is not None and current_dir != 0:
+             products = []
+             for wayline in next_wayline:
+                products.append(current_dir * wayline.slope)
+             #print("wayline : ", next_wayline.slope, (next_wayline.x1, next_wayline.z1), (next_wayline.x2, next_wayline.z2))
+             #print("direction : ", current_dir)
+             #print(prodcut)
+             products.sort(reverse = True)
+             if current_speed >= MAX_SPEED and len(products) >= 3:
+                p1 = products[0]
+                p2 = products[1]
+                p3 = products[2]
+                #prodcut = current_dir * next_wayline.slope
+                if (p1 > 0 or p1 < -2) and (p2 > 0 or p2 < -2) and (p3 > 0 or p3 < -2):
+                    print("turning! Slowing down!")
+                    return self.throttle_boundary[0]
              
-
         roll = self.agent.vehicle.transform.rotation.roll
         out = np.exp(-0.07 * np.abs(roll))
         output = float(np.clip(out, self.throttle_boundary[0], self.throttle_boundary[1]))
