@@ -125,26 +125,42 @@ class SimpleWpAndWlFollowingLocalPlanner(LocalPlanner):
                 self.way_points_queue.popleft()
             else:
                 break
-
-        target_waypoint = self.way_points_queue[0]
-        target_waylines = []
-        if len(self.way_points_queue) >= 12 :
-            target_waylines.append(WayLine(self.way_points_queue[11], self.way_points_queue[10]))
-        if len(self.way_points_queue) >= 14 :
-            target_waylines.append(WayLine(self.way_points_queue[13], self.way_points_queue[12]))
-        if len(self.way_points_queue) >= 16 :
-            target_waylines.append(WayLine(self.way_points_queue[15], self.way_points_queue[14]))
-        if len(self.way_points_queue) >= 18 :
-            target_waylines.append(WayLine(self.way_points_queue[17], self.way_points_queue[16]))
-        if len(self.way_points_queue) >= 20 :
-            target_waylines.append(WayLine(self.way_points_queue[19], self.way_points_queue[18]))
+        # implement look ahead for turning here, there are several ideas:
+        # 1. simply look for 20-31 waylines ahead, 
+        # and calculate the angle between wayline and cuurent speed vector(check throttle)
+        
+        # method 1
+        #target_waypoint = self.way_points_queue[0]
+        #target_waylines = []
+        #if len(self.way_points_queue) >= 22 :
+        #    target_waylines.append(WayLine(self.way_points_queue[11], self.way_points_queue[10]))
+        #if len(self.way_points_queue) >= 24 :
+        #    target_waylines.append(WayLine(self.way_points_queue[13], self.way_points_queue[12]))
+        #if len(self.way_points_queue) >= 26 :
+        #    target_waylines.append(WayLine(self.way_points_queue[15], self.way_points_queue[14]))
+        #if len(self.way_points_queue) >= 28 :
+        #    target_waylines.append(WayLine(self.way_points_queue[17], self.way_points_queue[16]))
+        #if len(self.way_points_queue) >= 30 :
+        #    target_waylines.append(WayLine(self.way_points_queue[19], self.way_points_queue[18]))
+        
+        #method 2
         #target_wayline = None
         #if len(self.way_points_queue) >= 10:
         #    target_wayline = WayLine(self.way_points_queue[9],self.way_points_queue[8])
         #elif len(self.way_points_queue) >= 2:
         #    target_wayline = WayLine(self.way_points_queue[1],self.way_points_queue[0])
+
+        # 2. compare the slope of waylines, large difference means a turn. Larger difference means sharper turns.
+        # in this case, check waypoints that are
+        check_list = {}
+        if len(self.way_points_queue) >= 2:
+            check_list["current_wayline"] = WayLine(self.way_points_queue[0], self.way_points_queue[1])
+        if len(self.way_points_queue) >= 20 :
+            check_list["look_ahead_wayline"] = WayLine(self.way_points_queue[19], self.way_points_queue[18])
+        if len(self.way_points_queue) >= 40:
+            check_list["target_wayline"] = WayLine(self.way_points_queue[38], self.way_points_queue[39])
         
-        control: VehicleControl = self.controller.run_in_series(next_waypoint=target_waypoint, next_wayline = target_waylines, current_dir = current_dir)
+        control: VehicleControl = self.controller.run_in_series(next_waypoint=target_waypoint, next_wayline = check_list, current_dir = current_dir)
         # self.logger.debug(f"\n"
         #                   f"Curr Transform: {self.agent.vehicle.transform}\n"
         #                   f"Target Location: {target_waypoint.location}\n"

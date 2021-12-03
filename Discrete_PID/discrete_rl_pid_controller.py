@@ -69,23 +69,47 @@ class LongPIDController(Controller):
         current_speed = Vehicle.get_speed(self.agent.vehicle)
         #if current_speed >= MAX_SPEED:
         #    return self.throttle_boundary[0]
-        if next_wayline is not None and current_dir is not None and current_dir != 0:
-             products = []
-             for wayline in next_wayline:
-                products.append(current_dir * wayline.slope)
+        #if next_wayline is not None and current_dir is not None and current_dir != 0:
+        #     products = []
+        #     for wayline in next_wayline:
+        #        products.append(current_dir * wayline.slope)
              #print("wayline : ", next_wayline.slope, (next_wayline.x1, next_wayline.z1), (next_wayline.x2, next_wayline.z2))
              #print("direction : ", current_dir)
              #print(prodcut)
-             products.sort(reverse = True)
-             if current_speed >= MAX_SPEED and len(products) >= 3:
-                p1 = products[0]
-                p2 = products[1]
-                p3 = products[2]
+        #     products.sort(reverse = True)
+        #     if current_speed >= MAX_SPEED and len(products) >= 3:
+        #        p1 = products[0]
+        #        p2 = products[1]
+        #       p3 = products[2]
                 #prodcut = current_dir * next_wayline.slope
-                if (p1 > 0 or p1 < -2) and (p2 > 0 or p2 < -2) and (p3 > 0 or p3 < -2):
-                    print("turning! Slowing down!")
-                    return self.throttle_boundary[0]
-             
+        #        if (p1 > 0 or p1 < -2) and (p2 > 0 or p2 < -2) and (p3 > 0 or p3 < -2):
+        #            print("turning! Slowing down!")
+        #            return self.throttle_boundary[0]
+
+        if len(next_wayline) == 3:
+            slope1 = next_wayline["current_wayline"].slope
+            slope2 = next_wayline["look_ahead_wayline"].slope
+            slope3 = next_wayline["target_wayline"].slope
+            tan1 = np.abs((slope1 - slope2) / (1 + slope1 * slope2))
+            tan2 = np.abs((slope2 - slope3) / (1 + slope2 * slope3))
+            tan3 = np.abs((slope1 - slope3) / (1 + slope1 * slope3))
+            # tan1 indicate if agent is actually turning
+            # tan2 indicate if there is a turn ahead
+            # tan3 indicate if there is a turn far ahead
+            if tan1 >=0.2:
+                print("turning")
+                return self.throttle_boundary[0]
+            if tan2 >= 0.5:
+                print("turning ahead")
+                return self.throttle_boundary[0]
+            if tan3 >= 1:
+                print("sharp turn ahead")
+                return self.throttle_boundary[0]
+        elif len(next_wayline) == 2:
+            return self.throttle_boundary[1]
+        else:
+            return self.throttle_boundary[0]
+
         roll = self.agent.vehicle.transform.rotation.roll
         out = np.exp(-0.07 * np.abs(roll))
         output = float(np.clip(out, self.throttle_boundary[0], self.throttle_boundary[1]))
