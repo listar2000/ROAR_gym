@@ -61,5 +61,5 @@
     "show_sensors_data": true,
     "save_sensor_data": false,
     "max_speed": 130,
-    "num_laps": 1
+    "num_laps": 10
 }

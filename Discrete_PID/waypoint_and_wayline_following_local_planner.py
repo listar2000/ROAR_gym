@@ -125,12 +125,15 @@ class SimpleWpAndWlFollowingLocalPlanner(LocalPlanner):
                 self.way_points_queue.popleft()
             else:
                 break
+        
+        target_waypoint = self.way_points_queue[0]
+        
         # implement look ahead for turning here, there are several ideas:
         # 1. simply look for 20-31 waylines ahead, 
         # and calculate the angle between wayline and cuurent speed vector(check throttle)
         
         # method 1
-        #target_waypoint = self.way_points_queue[0]
+        
         #target_waylines = []
         #if len(self.way_points_queue) >= 22 :
         #    target_waylines.append(WayLine(self.way_points_queue[11], self.way_points_queue[10]))
@@ -158,7 +161,7 @@ class SimpleWpAndWlFollowingLocalPlanner(LocalPlanner):
         if len(self.way_points_queue) >= 20 :
             check_list["look_ahead_wayline"] = WayLine(self.way_points_queue[19], self.way_points_queue[18])
         if len(self.way_points_queue) >= 40:
-            check_list["target_wayline"] = WayLine(self.way_points_queue[38], self.way_points_queue[39])
+            check_list["target_wayline"] = WayLine(self.way_points_queue[39], self.way_points_queue[38])
         
         control: VehicleControl = self.controller.run_in_series(next_waypoint=target_waypoint, next_wayline = check_list, current_dir = current_dir)
         # self.logger.debug(f"\n"

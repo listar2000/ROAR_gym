@@ -86,7 +86,11 @@ class LongPIDController(Controller):
         #            print("turning! Slowing down!")
         #            return self.throttle_boundary[0]
 
-        if len(next_wayline) == 3:
+        roll = self.agent.vehicle.transform.rotation.roll
+        out = np.exp(-0.07 * np.abs(roll))
+        output = float(np.clip(out, self.throttle_boundary[0], self.throttle_boundary[1]))
+
+        if len(next_wayline) == 3 :
             slope1 = next_wayline["current_wayline"].slope
             slope2 = next_wayline["look_ahead_wayline"].slope
             slope3 = next_wayline["target_wayline"].slope
@@ -96,23 +100,30 @@ class LongPIDController(Controller):
             # tan1 indicate if agent is actually turning
             # tan2 indicate if there is a turn ahead
             # tan3 indicate if there is a turn far ahead
-            if tan1 >=0.2:
-                print("turning")
+            
+            
+            if tan1 >= 1 and current_speed >= TARGET_SPEED:
+                print("low-speed turining")
                 return self.throttle_boundary[0]
-            if tan2 >= 0.5:
-                print("turning ahead")
+
+            if tan1 >= 0.5 and current_speed >= MAX_SPEED:
+                print("high-speed turning")
                 return self.throttle_boundary[0]
-            if tan3 >= 1:
+           
+            if tan3 >= 1 and current_speed > TARGET_SPEED:
                 print("sharp turn ahead")
                 return self.throttle_boundary[0]
+            #if tan2 >= 1:
+            #    print("turning ahead")
+            #    return self.throttle_boundary[0]
+            #if tan1 >=0.5:
+            #    print("turning")
+            #    return self.throttle_boundary[0]
         elif len(next_wayline) == 2:
             return self.throttle_boundary[1]
-        else:
-            return self.throttle_boundary[0]
+        elif len(next_wayline) == 1:
+            return self.throttle_boundary[1]
 
-        roll = self.agent.vehicle.transform.rotation.roll
-        out = np.exp(-0.07 * np.abs(roll))
-        output = float(np.clip(out, self.throttle_boundary[0], self.throttle_boundary[1]))
         return output
 
 class LatPIDController(Controller):
