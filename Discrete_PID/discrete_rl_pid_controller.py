@@ -101,7 +101,6 @@ class LongPIDController(Controller):
             # tan2 indicate if there is a turn ahead
             # tan3 indicate if there is a turn far ahead
             
-            
             if tan1 >= 1 and current_speed >= TARGET_SPEED:
                 print("low-speed turining")
                 return self.throttle_boundary[0]

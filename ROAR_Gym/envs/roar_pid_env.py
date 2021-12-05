@@ -94,10 +94,10 @@ class ROARPIDEnv(ROAREnv):
             print("wayline reward: ", cross_rwd)
  
         if self.carla_runner.get_num_collision() > self.collisions:
-            reward += -100000
+            reward -= 100000
             self.collisions = self.carla_runner.get_num_collision()
-        if self.carla_runner.get_num_collision() > self.max_collision_allowed:
-            reward += -100000000
+        # if self.carla_runner.get_num_collision() >= self.max_collision_allowed:
+        #     reward += -100000000
 
         return reward
 
