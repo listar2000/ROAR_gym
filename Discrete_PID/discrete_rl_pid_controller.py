@@ -34,9 +34,11 @@ class PIDController(Controller):
         )
         self.logger = logging.getLogger(__name__)
 
-    def run_in_series(self, next_waypoint: Transform, **kwargs) -> VehicleControl:
+    def run_in_series(self, next_waypoint: Transform, next_wayline = None,  current_dir = None, **kwargs) -> VehicleControl:
         throttle = self.long_pid_controller.run_in_series(next_waypoint=next_waypoint,
-                                                          target_speed=kwargs.get("target_speed", self.max_speed))
+                                                          next_wayline = next_wayline, 
+                                                          current_dir = current_dir
+                                                          )
         steering = self.lat_pid_controller.run_in_series(next_waypoint=next_waypoint)
         return VehicleControl(throttle=throttle, steering=steering)
 
@@ -63,39 +65,65 @@ class LongPIDController(Controller):
 
         self._dt = dt
 
-    def run_in_series(self, next_waypoint: Transform, **kwargs) -> float:
+    def run_in_series(self, next_waypoint: Transform, next_wayline, current_dir, **kwargs) -> float:
         current_speed = Vehicle.get_speed(self.agent.vehicle)
-        if current_speed >= MAX_SPEED:
-            return self.throttle_boundary[0]
+        #if current_speed >= MAX_SPEED:
+        #    return self.throttle_boundary[0]
+        #if next_wayline is not None and current_dir is not None and current_dir != 0:
+        #     products = []
+        #     for wayline in next_wayline:
+        #        products.append(current_dir * wayline.slope)
+             #print("wayline : ", next_wayline.slope, (next_wayline.x1, next_wayline.z1), (next_wayline.x2, next_wayline.z2))
+             #print("direction : ", current_dir)
+             #print(prodcut)
+        #     products.sort(reverse = True)
+        #     if current_speed >= MAX_SPEED and len(products) >= 3:
+        #        p1 = products[0]
+        #        p2 = products[1]
+        #       p3 = products[2]
+                #prodcut = current_dir * next_wayline.slope
+        #        if (p1 > 0 or p1 < -2) and (p2 > 0 or p2 < -2) and (p3 > 0 or p3 < -2):
+        #            print("turning! Slowing down!")
+        #            return self.throttle_boundary[0]
 
         roll = self.agent.vehicle.transform.rotation.roll
         out = np.exp(-0.07 * np.abs(roll))
         output = float(np.clip(out, self.throttle_boundary[0], self.throttle_boundary[1]))
+
+        if len(next_wayline) == 3 :
+            slope1 = next_wayline["current_wayline"].slope
+            slope2 = next_wayline["look_ahead_wayline"].slope
+            slope3 = next_wayline["target_wayline"].slope
+            tan1 = np.abs((slope1 - slope2) / (1 + slope1 * slope2))
+            tan2 = np.abs((slope2 - slope3) / (1 + slope2 * slope3))
+            tan3 = np.abs((slope1 - slope3) / (1 + slope1 * slope3))
+            # tan1 indicate if agent is actually turning
+            # tan2 indicate if there is a turn ahead
+            # tan3 indicate if there is a turn far ahead
+            
+            if tan1 >= 1 and current_speed >= TARGET_SPEED:
+                print("low-speed turining")
+                return self.throttle_boundary[0]
+
+            if tan1 >= 0.5 and current_speed >= MAX_SPEED:
+                print("high-speed turning")
+                return self.throttle_boundary[0]
+           
+            if tan3 >= 1 and current_speed > TARGET_SPEED:
+                print("sharp turn ahead")
+                return self.throttle_boundary[0]
+            #if tan2 >= 1:
+            #    print("turning ahead")
+            #    return self.throttle_boundary[0]
+            #if tan1 >=0.5:
+            #    print("turning")
+            #    return self.throttle_boundary[0]
+        elif len(next_wayline) == 2:
+            return self.throttle_boundary[1]
+        elif len(next_wayline) == 1:
+            return self.throttle_boundary[1]
+
         return output
-        #target_speed = min(self.max_speed, kwargs.get("target_speed", self.max_speed))
-        #current_speed = Vehicle.get_speed(self.agent.vehicle)
-
-        #k_p, k_d, k_i = PIDController.find_k_values(vehicle=self.agent.vehicle, config=self.config)
-        #error = target_speed - current_speed
-
-        #self._error_buffer.append(error)
-
-        #if len(self._error_buffer) >= 2:
-            # print(self._error_buffer[-1], self._error_buffer[-2])
-            #_de = (self._error_buffer[-2] - self._error_buffer[-1]) / self._dt
-            #_ie = sum(self._error_buffer) * self._dt
-        #else:
-            #_de = 0.0
-            #_ie = 0.0
-        #output = float(np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.throttle_boundary[0],
-                               #self.throttle_boundary[1]))
-        # self.logger.debug(f"curr_speed: {round(current_speed, 2)} | kp: {round(k_p, 2)} | kd: {k_d} | ki = {k_i} | "
-        #       f"err = {round(error, 2)} | de = {round(_de, 2)} | ie = {round(_ie, 2)}")
-              # f"self._error_buffer[-1] {self._error_buffer[-1]} | self._error_buffer[-2] = {self._error_buffer[-2]}")
-        #return output
-        
-       
-
 
 class LatPIDController(Controller):
     def __init__(self, agent, config: dict, steering_boundary: Tuple[float, float],
