@@ -47,7 +47,7 @@ def main():
 
     env = gym.make('roar-pid-v0', params=params)
 
-    latest_model_path = find_latest_model(Path(os.getcwd()))
+    latest_model_path = find_latest_model()
     model = DQN.load(latest_model_path, print_system_info=True)   
     model.tensorboard_log = "./predict"
 
@@ -60,7 +60,7 @@ def main():
         if is_done:
             break
 
-def find_latest_model(root_path: Path) -> Optional[Path]:
+def find_latest_model(root_path: Path = Path(os.getcwd())) -> Optional[Path]:
     import os
     from pathlib import Path
     logs_path = (root_path / "output" / "discrete_pid_logs")
