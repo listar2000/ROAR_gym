@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from ROAR.control_module.controller import Controller
 from ROAR.utilities_module.vehicle_models import VehicleControl, Vehicle
 
-from ROAR.utilities_module.data_structures_models import Transform, Location
+from ROAR.utilities_module.data_structures_models import Transform
 from collections import deque
 import numpy as np
 import logging
@@ -10,8 +10,10 @@ from ROAR.agent_module.agent import Agent
 from typing import Any, Tuple
 import json
 from pathlib import Path
+from stable_baselines3 import DQN
 
-from Discrete_PID.valid_pid_action import VALID_ACTIONS, MAX_SPEED, TARGET_SPEED
+from Discrete_PID.valid_pid_action import MAX_SPEED, TARGET_SPEED
+from Discrete_PID.valid_pid_action import VALID_ACTIONS
 
 class LongPIDController(Controller):
     def __init__(self, agent, config: dict, throttle_boundary: Tuple[float, float], max_speed: float,
@@ -23,6 +25,7 @@ class LongPIDController(Controller):
         self._error_buffer = deque(maxlen=10)
 
         self._dt = dt
+
 
     def run_in_series(self, next_waypoint: Transform, next_wayline, current_dir, **kwargs) -> float:
         current_speed = Vehicle.get_speed(self.agent.vehicle)
@@ -117,7 +120,9 @@ class LatPIDController(Controller):
             _de = 0.0
             _ie = 0.0
 
-        k_p, k_d, k_i = PIDController.find_k_values(config=self.config, vehicle=self.agent.vehicle)
+        k_p = self.agent.kwargs["lat_k_p"]
+        k_d = self.agent.kwargs["lat_k_d"]
+        k_i = self.agent.kwargs["lat_k_i"]
 
         lat_control = float(
             np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.steering_boundary[0], self.steering_boundary[1])
@@ -128,7 +133,9 @@ class LatPIDController(Controller):
 class PIDEvalController(Controller):
     def __init__(self, agent, steering_boundary: Tuple[float, float],
                  throttle_boundary: Tuple[float, float], **kwargs):
-        super().__init__(agent, **kwargs)
+        
+        print("hello ", kwargs)
+        super().__init__(agent)
         self.max_speed = self.agent.agent_settings.max_speed
         self.throttle_boundary = throttle_boundary
         self.steering_boundary = steering_boundary
@@ -144,25 +151,37 @@ class PIDEvalController(Controller):
         )
         self.logger = logging.getLogger(__name__)
 
+        self.pid_rl_model = DQN.load(Path("./output/discrete_pid_logs/rl_model_1000000_steps"))
+        # try:
+        #     self.pid_rl_model = DQN.load(Path("../output/discrete_pid_logs/rl_model_1000000_steps.zip"))
+        # except:
+        #     print("error happens")
+        #     path = Path(self.agent.kwargs['kwargs']["rl_pid_model_file_path"])
+        #     self.pid_rl_model = DQN.load(load_path=path)
+
     def get_obs(self) -> Any:
-        pass
+        curr_speed = np.array([Vehicle.get_speed(self.agent.vehicle)])
+        curr_transform = self.agent.vehicle.transform.to_array()
+        if len(self.agent.local_planner.way_points_queue) > 0:
+            next_waypoint_transform = self.agent.local_planner.way_points_queue[0].to_array()
+        else:
+            next_waypoint_transform = curr_transform
+        return np.append(np.append(curr_speed, curr_transform), next_waypoint_transform)
 
     def run_in_series(self, next_waypoint: Transform, next_wayline = None,  current_dir = None, **kwargs) -> VehicleControl:
         obs = self.get_obs()
+        action, _ = self.pid_rl_model.predict(obs)
+
+        action = VALID_ACTIONS[int(action)]
+        lat_k_p, lat_k_d, lat_k_i = action[0], action[1], action[2]
+
+        self.agent.kwargs["lat_k_p"] = lat_k_p
+        self.agent.kwargs["lat_k_d"] = lat_k_d
+        self.agent.kwargs["lat_k_i"] = lat_k_i
+        
         throttle = self.long_pid_controller.run_in_series(next_waypoint=next_waypoint,
                                                           next_wayline = next_wayline, 
                                                           current_dir = current_dir
                                                           )
         steering = self.lat_pid_controller.run_in_series(next_waypoint=next_waypoint)
         return VehicleControl(throttle=throttle, steering=steering)
-
-    @staticmethod
-    def find_k_values(vehicle: Vehicle, config: dict) -> np.array:
-        current_speed = Vehicle.get_speed(vehicle=vehicle)
-        k_p, k_d, k_i = 1, 0, 0
-        for speed_upper_bound, kvalues in config.items():
-            speed_upper_bound = float(speed_upper_bound)
-            if current_speed < speed_upper_bound:
-                k_p, k_d, k_i = kvalues["Kp"], kvalues["Kd"], kvalues["Ki"]
-                break
-        return np.array([k_p, k_d, k_i])
