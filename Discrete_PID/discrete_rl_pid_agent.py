@@ -106,7 +106,8 @@ class RLPIDAgent(Agent):
 
     # calculate the location hitting on the most recent wayline
     def _calculate_hit_loc(self):
-        assert len(self.transform_history) > 1, "transform history should have at least 2 entries"
+        if len(self.transform_history) < 2:
+            self.hit_loc = (0, 0)
         #print("current: ", (self.vehicle.transform.location.x, self.vehicle.transform.location.z))
         s1, i1 = self.wayline.slope, self.wayline.intercept
         #print("self.wayline: ", (self.wayline.x1,self.wayline.z1), (self.wayline.x2, self.wayline.z2))
