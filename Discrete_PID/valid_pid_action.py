@@ -9,15 +9,15 @@ TARGET_SPEED = 120
 
 def init_actions_space():
     p_s = 0
-    p_e = 1
+    p_e = 0.6
     i_s = 0
-    i_e = 1
+    i_e = 0.6
     d_s = 0
-    d_e = 1
+    d_e = 0.6
     
-    dp = 0.2
-    di = 0.2
-    dd = 0.2
+    dp = 0.1
+    di = 0.1
+    dd = 0.1
 
     p = p_s
     i = i_s

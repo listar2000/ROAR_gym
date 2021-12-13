@@ -15,6 +15,60 @@ from pathlib import Path
 from Discrete_PID.valid_pid_action import VALID_ACTIONS, MAX_SPEED, TARGET_SPEED
 
 
+turning_box_1 = [803, 870, -630, -570]
+turning_box_2 = [655.9, 751.6, 577.6, 718]
+turning_box_3 = [-727.6, -689.3, -126, -61]
+turning_box_4 = [-845.9, -819.0, -688, -661.6]
+
+# turning_boxes = [   [803, 870, -630, -570], 
+#                     [655.9, 751.6, 577.6, 718], 
+#                     [-727.6, -689.3, -126, -61], 
+#                     [-845.9, -819.0, -688, -661.6], 
+
+#                     [-689.3, -727.6, -126, -61],
+#                     [-850, -821, -432, -278] 
+#                     #[783, 865, -482, -198.3]
+
+# ]
+
+turning_boxes = [   [803, 870, -630, -570], 
+                    [788, 826, -356, -190],
+                    [690, 732, 677, 706], 
+                    [-620, -490, 642, 746], 
+                    [-676, -720, -115, -2.5], 
+
+                    [-843, -827.4, -405, -265],
+                    [-850, -821, -686, -278] 
+                    #[783, 865, -482, -198.3]
+
+]
+
+
+def turning(cur_loc):
+    turning = False
+
+    for i, box in enumerate(turning_boxes):
+        if in_turning_box(cur_loc, box):
+            turning = True
+            print(i)
+            return turning
+
+    return turning
+
+
+def in_turning_box(cur_loc, box_boundary):
+    x = cur_loc[0]
+    z = cur_loc[1]
+    x1 = box_boundary[0]
+    x2 = box_boundary[1]
+    z1 = box_boundary[2]
+    z2 = box_boundary[3]
+    #print(x, (x1, x2), (x >= x1 and x<=x2), z, (z1, z2),(z >= z1 and z <= z2))
+    return (x >= x1 and x<=x2 and z >= z1 and z <= z2)
+
+
+
+
 class PIDController(Controller):
     def __init__(self, agent, steering_boundary: Tuple[float, float],
                  throttle_boundary: Tuple[float, float], **kwargs):
@@ -30,7 +84,7 @@ class PIDController(Controller):
         self.lat_pid_controller = LatPIDController(
             agent=agent,
             config=self.config["latitudinal_controller"],
-            steering_boundary=steering_boundary
+            steering_boundary=steering_boundary,
         )
         self.logger = logging.getLogger(__name__)
 
@@ -39,7 +93,7 @@ class PIDController(Controller):
                                                           next_wayline = next_wayline, 
                                                           current_dir = current_dir
                                                           )
-        steering = self.lat_pid_controller.run_in_series(next_waypoint=next_waypoint)
+        steering = self.lat_pid_controller.run_in_series(next_waypoint=next_waypoint, current_dir = current_dir)
         return VehicleControl(throttle=throttle, steering=steering)
 
     @staticmethod
@@ -51,6 +105,7 @@ class PIDController(Controller):
             if current_speed < speed_upper_bound:
                 k_p, k_d, k_i = kvalues["Kp"], kvalues["Kd"], kvalues["Ki"]
                 break
+        print(current_speed, k_p, k_i, k_d)
         return np.array([k_p, k_d, k_i])
 
 
@@ -133,8 +188,9 @@ class LatPIDController(Controller):
         self.steering_boundary = steering_boundary
         self._error_buffer = deque(maxlen=10)
         self._dt = dt
+        self.prev_steering = float(0)
 
-    def run_in_series(self, next_waypoint: Transform, **kwargs) -> float:
+    def run_in_series(self, next_waypoint: Transform, current_dir= None, **kwargs) -> float:
         """
         Calculates a vector that represent where you are going.
         Args:
@@ -176,9 +232,35 @@ class LatPIDController(Controller):
             _de = 0.0
             _ie = 0.0
 
-        k_p, k_d, k_i = PIDController.find_k_values(config=self.config, vehicle=self.agent.vehicle)
+        #k_p, k_d, k_i = PIDController.find_k_values(config=self.config, vehicle=self.agent.vehicle)
+        k_p, k_d, k_i = self.agent.kwargs["lat_k_p"], self.agent.kwargs["lat_k_d"], self.agent.kwargs["lat_k_i"]
+        
+        # print(self.agent.kwargs["lat_k_p"], self.agent.kwargs["lat_k_d"], self.agent.kwargs["lat_k_i"])
+        # k_p, k_d, k_i = [0.2, 0.02, 0]
+        # cal_steering = (k_p * error) + (k_d * _de) + (k_i * _ie)
+        # lat_control =  0
+        # #print(v_begin)
+        
+        # if turning((v_begin[0], v_begin[2])):
+        #     #print(turning)
+        #     lat_control = float(
+        #      np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), -1, 1)
+        #     )
+        # else:
+        #     k_p, k_d, k_i = [0.2, 0.02, 0]
+        #     lat_control = float(
+        #      np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.steering_boundary[0], self.steering_boundary[1])
+        #     )
+        
+        # if abs(lat_control) > 0.2:
+        #     lat_control = - self.prev_steering
+      
+        # self.prev_steering = lat_control
+
+        #print(lat_control)
 
         lat_control = float(
-            np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.steering_boundary[0], self.steering_boundary[1])
-        )
+              np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.steering_boundary[0], self.steering_boundary[1])
+            )
+
         return lat_control

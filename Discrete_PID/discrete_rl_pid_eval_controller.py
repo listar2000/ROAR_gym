@@ -133,8 +133,6 @@ class LatPIDController(Controller):
 class PIDEvalController(Controller):
     def __init__(self, agent, steering_boundary: Tuple[float, float],
                  throttle_boundary: Tuple[float, float], **kwargs):
-        
-        print("hello ", kwargs)
         super().__init__(agent)
         self.max_speed = self.agent.agent_settings.max_speed
         self.throttle_boundary = throttle_boundary

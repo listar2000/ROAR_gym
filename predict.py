@@ -2,6 +2,8 @@ import warnings
 import logging
 from typing import Optional, Dict
 
+import numpy as np
+
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 logging.getLogger("numpy").setLevel(logging.ERROR)
 warnings.filterwarnings('ignore')
@@ -11,10 +13,8 @@ from pathlib import Path
 
 sys.path.append(Path(os.getcwd()).parent.as_posix())
 import gym
-import ROAR_Gym
 from ROAR_Sim.configurations.configuration import Configuration as CarlaConfig
 from ROAR.configurations.configuration import Configuration as AgentConfig
-from ROAR.agent_module.agent import Agent
 
 #from ROAR.agent_module.rl_pid_agent import RLPIDAgent
 from Discrete_PID.discrete_rl_pid_agent import RLPIDAgent
@@ -51,14 +51,17 @@ def main():
     model = DQN.load(latest_model_path, print_system_info=True)   
     model.tensorboard_log = "./predict"
 
-    obs = env.reset()
+    env.reset()
+    obs = np.array([0, -809.52062988, 75.64264679, -689.72875977, 0, 0, -90.00036907, -804.28, 75.04, -689.73, 0, 0, 0])
     
+    i = 0
     while True:
         action, _states = model.predict(obs)
-        print("act: ", action)
+        #print(action)
         obs, rewards, is_done, info = env.step(action)
         if is_done:
             break
+    print("10 lapses finished")
 
 def find_latest_model(root_path: Path = Path(os.getcwd())) -> Optional[Path]:
     import os
