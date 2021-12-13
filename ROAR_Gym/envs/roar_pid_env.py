@@ -18,45 +18,6 @@ from collections import OrderedDict
 from Discrete_PID.valid_pid_action import VALID_ACTIONS, MAX_SPEED, TARGET_SPEED
 from Discrete_PID.wayline import WayLine
 
-
-env_turning_boxes = [   [803, 870, -630, -570], 
-                    [788, 826, -356, -190],
-                    [690, 732, 677, 706], 
-                    [-620, -490, 642, 746], 
-                    [-720, -676, -115, -2.5], 
-
-                    [-843, -827.4, -405, -265],
-                    [-850, -821, -686, -278] 
-                    #[783, 865, -482, -198.3]
-]
-
-
-def env_turning(cur_loc):
-    turning = False
-
-    for i, box in enumerate(env_turning_boxes):
-        if env_in_turning_box(cur_loc, box):
-            turning = True
-            #print(i)
-            return turning
-
-    return turning
-
-
-def env_in_turning_box(cur_loc, box_boundary):
-    x = cur_loc[0]
-    z = cur_loc[1]
-    x1 = box_boundary[0]
-    x2 = box_boundary[1]
-    z1 = box_boundary[2]
-    z2 = box_boundary[3]
-    #print(x, (x1, x2), (x >= x1 and x<=x2), z, (z1, z2),(z >= z1 and z <= z2))
-    return (x >= x1 and x<=x2 and z >= z1 and z <= z2)
-
-
-
-
-
 class ROARPIDEnv(ROAREnv):
     def __init__(self, params):
         super().__init__(params)
@@ -68,11 +29,11 @@ class ROARPIDEnv(ROAREnv):
         self.action_space = gym.spaces.Discrete(len(VALID_ACTIONS))
 
         # observation_space = curr_speed, curr_transform, next_waypoint
-        self.observation_space = gym.spaces.Box(low=np.array([-250,
+        self.observation_space = gym.spaces.Box(low=np.array([-200,
                                                               -1000, -1000, -1000, -360, -360, -360,
                                                               -1000, -1000, -1000, -360, -360, -360,
                                                               ]),
-                                                high=np.array([250,
+                                                high=np.array([200,
                                                                1000, 1000, 1000, 360, 360, 360,
                                                                1000, 1000, 1000, 360, 360, 360]),
                                                 dtype=np.float32)
@@ -123,17 +84,17 @@ class ROARPIDEnv(ROAREnv):
         # reward += np.clip(self.prev_dist_to_strip - curr_dist_to_strip, -10, 10)
         # reward -= self.carla_runner.get_num_collision()
         
-        cur_loc = self.agent.vehicle.transform.location.to_array()
 
-        if not env_turning(cur_loc):
-            if abs(self.agent.vehicle.control.steering) >= 0.6:
-                reward -= 100
-            elif abs(self.agent.vehicle.control.steering) >= 0.4:
-                reward -= 50
-            elif abs(self.agent.vehicle.control.steering) >= 0.1:
-                reward -= 20
-            if abs(self.prev_steering - self.agent.vehicle.control.steering) > 0.5:
-                reward -= 100
+        if abs(self.agent.vehicle.control.steering) >= 0.6:
+    #         # prevent it from over steering
+            reward -= 50
+        elif abs(self.agent.vehicle.control.steering) >= 0.4:
+            reward -= 30
+        elif abs(self.agent.vehicle.control.steering) >= 0.15:
+            reward -= 5
+
+        if abs(self.prev_steering - self.agent.vehicle.control.steering) > 0.5:
+            reward -= 100
 
 
         # log prev info for next reward computation
@@ -147,10 +108,10 @@ class ROARPIDEnv(ROAREnv):
         #     print("wayline reward: ", cross_rwd)
  
         if self.carla_runner.get_num_collision() > self.collisions:
-            reward -= 10000000
+            reward -= 100000
             self.collisions = self.carla_runner.get_num_collision()
-        # if self.carla_runner.get_num_collision() >= self.max_collision_allowed:
-        #      reward += -1000000
+        if self.carla_runner.get_num_collision() >= self.max_collision_allowed:
+             reward += -1000000
         
         return reward
 
@@ -232,7 +193,7 @@ class ROARPIDEnv(ROAREnv):
             reaching_reward += 100
         return reaching_reward
 
-    def wayline_reward(self, max_reward = 1000, clip_near = 0.5, clip_far = 3):
+    def wayline_reward(self, max_reward = 100, clip_near = 0.5, clip_far = 3):
         """
         Args:
             max_reward: maximum reward achievable through passing wayline

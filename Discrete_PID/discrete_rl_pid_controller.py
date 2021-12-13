@@ -233,24 +233,24 @@ class LatPIDController(Controller):
             _ie = 0.0
 
         #k_p, k_d, k_i = PIDController.find_k_values(config=self.config, vehicle=self.agent.vehicle)
-        k_p, k_d, k_i = self.agent.kwargs["lat_k_p"], self.agent.kwargs["lat_k_d"], self.agent.kwargs["lat_k_i"]
-        
+        # k_p, k_d, k_i = self.agent.kwargs["lat_k_p"], self.agent.kwargs["lat_k_d"], self.agent.kwargs["lat_k_i"]
+
         # print(self.agent.kwargs["lat_k_p"], self.agent.kwargs["lat_k_d"], self.agent.kwargs["lat_k_i"])
-        # k_p, k_d, k_i = [0.2, 0.02, 0]
-        # cal_steering = (k_p * error) + (k_d * _de) + (k_i * _ie)
-        # lat_control =  0
-        # #print(v_begin)
+        k_p, k_d, k_i = [0.2, 0.02, 0]
+        cal_steering = (k_p * error) + (k_d * _de) + (k_i * _ie)
+        lat_control =  0
+        #print(v_begin)
         
-        # if turning((v_begin[0], v_begin[2])):
-        #     #print(turning)
-        #     lat_control = float(
-        #      np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), -1, 1)
-        #     )
-        # else:
-        #     k_p, k_d, k_i = [0.2, 0.02, 0]
-        #     lat_control = float(
-        #      np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.steering_boundary[0], self.steering_boundary[1])
-        #     )
+        if turning((v_begin[0], v_begin[2])):
+            #print(turning)
+            lat_control = float(
+             np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), -1, 1)
+            )
+        else:
+            k_p, k_d, k_i = [0.2, 0.02, 0]
+            lat_control = float(
+             np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.steering_boundary[0], self.steering_boundary[1])
+            )
         
         # if abs(lat_control) > 0.2:
         #     lat_control = - self.prev_steering
@@ -259,8 +259,8 @@ class LatPIDController(Controller):
 
         #print(lat_control)
 
-        lat_control = float(
-              np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.steering_boundary[0], self.steering_boundary[1])
-            )
+        # lat_control = float(
+        #       np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.steering_boundary[0], self.steering_boundary[1])
+        #     )
 
         return lat_control
